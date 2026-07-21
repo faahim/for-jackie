@@ -70,6 +70,55 @@ export default {
   async scheduled(controller, env, ctx) {
     ctx.waitUntil(pollSources(env));
   },
+
+  /**
+   * Inbound email (Cloudflare Email Routing → this Worker). Used for official
+   * newsletters (e.g. the ORC email list — their designated update channel).
+   * Every message becomes a candidate for the verification agent and is
+   * forwarded to Telegram. Nothing is ever published directly from email.
+   */
+  async email(message, env, ctx) {
+    try {
+      const from = message.from || "unknown";
+      const subject = message.headers.get("subject") || "(no subject)";
+      const rawSize = message.rawSize || 0;
+      let bodyText = "";
+      if (rawSize > 0 && rawSize < 1024 * 1024) {
+        const raw = await new Response(message.raw).text();
+        // Crude text extraction: strip headers block, tags, collapse whitespace.
+        const afterHeaders = raw.split(/\r?\n\r?\n/).slice(1).join("\n\n");
+        bodyText = normalizeHtml(afterHeaders).slice(0, 4000);
+      }
+      const key = `cand:${new Date().toISOString()}-${await shortHash(from + subject)}`;
+      await env.KV.put(
+        key,
+        JSON.stringify({
+          source: `email:${from}`,
+          title: `Inbound email: ${subject}`,
+          url: null,
+          note: bodyText ? `Body (extracted): ${bodyText.slice(0, 1500)}` : "Body could not be extracted.",
+          detectedAt: new Date().toISOString(),
+        })
+      );
+      console.log(JSON.stringify({ level: "info", event: "email", from, subject, stored: key }));
+      if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
+        ctx.waitUntil(
+          fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              chat_id: env.TELEGRAM_CHAT_ID,
+              text: `📬 Watcher inbox\nFrom: ${from}\nSubject: ${subject}\n\n${bodyText.slice(0, 500)}`,
+            }),
+          }).catch((err) =>
+            console.log(JSON.stringify({ level: "error", event: "email-telegram", message: String(err) }))
+          )
+        );
+      }
+    } catch (err) {
+      console.log(JSON.stringify({ level: "error", event: "email", message: String(err) }));
+    }
+  },
 };
 
 async function handleApi(request, url, env, ctx) {

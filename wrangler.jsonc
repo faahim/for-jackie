@@ -8,6 +8,10 @@
     "directory": "public",
     "binding": "ASSETS"
   },
+  "routes": [
+    { "pattern": "forjackie.org", "custom_domain": true },
+    { "pattern": "www.forjackie.org", "custom_domain": true }
+  ],
   "kv_namespaces": [
     {
       "binding": "KV",
