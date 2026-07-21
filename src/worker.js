@@ -129,6 +129,8 @@ async function handleApi(request, url, env, ctx) {
   }
 
   if (route === "GET /api/content") {
+    // Privacy-respecting visit counter: one daily number, nothing else.
+    ctx.waitUntil(bumpDailyHits(env));
     const stored = await env.KV.get("content", "json");
     if (stored) return json(stored);
     // Fall back to the seed shipped with the static assets.
@@ -220,6 +222,16 @@ async function handleApi(request, url, env, ctx) {
       JSON.stringify({ actor: body.actor || "unknown", note: body.note || "", bytes: doc.length })
     );
     return json({ ok: true, updatedAt: now });
+  }
+
+  if (route === "GET /api/stats") {
+    const days = await Promise.all(
+      Array.from({ length: 14 }, (_, i) => {
+        const day = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+        return env.KV.get(`hits:${day}`).then((v) => ({ day, hits: parseInt(v || "0", 10) }));
+      })
+    );
+    return json({ ok: true, days });
   }
 
   if (route === "GET /api/audit") {
@@ -488,6 +500,21 @@ function normalizeHtml(html) {
 }
 
 // ---------- utilities ----------
+
+/**
+ * Best-effort daily visit counter (hits:YYYY-MM-DD). Non-atomic get+put is
+ * fine — this is a mood indicator, not analytics. No IPs, no UAs, no cookies:
+ * a single number per day, expiring after 30 days.
+ */
+async function bumpDailyHits(env) {
+  try {
+    const key = `hits:${new Date().toISOString().slice(0, 10)}`;
+    const count = parseInt((await env.KV.get(key)) || "0", 10) + 1;
+    await env.KV.put(key, String(count), { expirationTtl: 60 * 60 * 24 * 30 });
+  } catch (err) {
+    console.log(JSON.stringify({ level: "warn", event: "hits-bump-failed", message: String(err) }));
+  }
+}
 
 async function listWithValues(env, prefix, limit) {
   const list = await env.KV.list({ prefix, limit });

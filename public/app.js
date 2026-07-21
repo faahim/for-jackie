@@ -298,28 +298,28 @@
 
   // ---- Wall of Love: cache-first notes + moderated submissions ----
 
+  function wallNoteHtml(n) {
+    var d = new Date(n.approvedAt);
+    var when = isNaN(d)
+      ? ""
+      : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return (
+      '<div class="wall-note"><p class="txt">' + esc(n.message) + "</p>" +
+      '<div class="who"><span>' + esc(n.name || "A friend of the nest") + "</span>" +
+      (when ? '<span class="date">' + esc(when) + "</span>" : "") +
+      "</div></div>"
+    );
+  }
+
   function setupWall() {
     var wallEl = document.getElementById("wall");
     if (!wallEl) return;
     var WALL_CACHE = "fj:wall:v1";
     var lastNotes = null; // serialized form of what's rendered
 
-    function noteHtml(n) {
-      var d = new Date(n.approvedAt);
-      var when = isNaN(d)
-        ? ""
-        : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-      return (
-        '<div class="wall-note"><p class="txt">' + esc(n.message) + "</p>" +
-        '<div class="who"><span>' + esc(n.name || "A friend of the nest") + "</span>" +
-        (when ? '<span class="date">' + esc(when) + "</span>" : "") +
-        "</div></div>"
-      );
-    }
-
     function renderWall(notes, mode) {
       var html = notes.length
-        ? notes.map(noteHtml).join("")
+        ? notes.map(wallNoteHtml).join("")
         : '<div class="wall-empty"><p>The wall is waiting for its very first note. If the nest family has meant something to you, yours could be the one that starts it.</p></div>';
       // Stagger only the cold-load entrance; later refreshes cross-fade quietly.
       if (mode === "enter" && !reduceMotion && notes.length) {
@@ -437,6 +437,44 @@
     });
   }
   if (page === "wall") setupWall();
+
+  // ---- home: "From the Wall of Love" — 3 newest notes, hidden when empty ----
+
+  function setupHomeWall() {
+    var sec = document.getElementById("home-wall");
+    var list = document.getElementById("home-wall-list");
+    if (!sec || !list) return;
+    var lastSig = null;
+    function show(notes, mode) {
+      if (!notes || !notes.length) return; // no empty state on home — stays hidden
+      sec.hidden = false;
+      setHtml(list, notes.slice(0, 3).map(wallNoteHtml).join(""), mode);
+    }
+    var cachedNotes = null;
+    try { cachedNotes = JSON.parse(localStorage.getItem("fj:wall:v1")); } catch (e) { /* fine */ }
+    if (cachedNotes && Array.isArray(cachedNotes)) {
+      show(cachedNotes, "cache"); // synchronous — zero-CLS on warm loads
+      lastSig = JSON.stringify(cachedNotes);
+    }
+    fetch("/api/wall", { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("api " + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || !Array.isArray(data.notes)) return;
+        var sig = JSON.stringify(data.notes);
+        try { localStorage.setItem("fj:wall:v1", sig); } catch (e) { /* fine */ }
+        if (sig !== lastSig) {
+          show(data.notes, lastSig === null ? "enter" : "update");
+          lastSig = sig;
+        }
+      })
+      .catch(function (err) {
+        console.log("home wall load failed", err);
+      });
+  }
+  if (page === "home") setupHomeWall();
 
   // ---- soothing first-view reveals (once, staggered, ease-out) ----
 
@@ -586,10 +624,194 @@
   }
   setupDockPills();
 
+  // ---- bottom sheet (Vaul-style): shared by the More menu & mobile contact ----
+  // Slides up with rounded corners + grab handle; visualViewport keeps the
+  // focused input above the on-screen keyboard (the Vaul "inputs" behavior);
+  // dismiss via backdrop, drag-down, Esc; focus trapped and restored.
+
+  var sheetApi = null;
+
+  function getSheet() {
+    if (sheetApi) return sheetApi;
+
+    var sOverlay = document.createElement("div");
+    sOverlay.className = "sheet-overlay";
+    sOverlay.hidden = true;
+    var sheet = document.createElement("div");
+    sheet.className = "sheet";
+    sheet.hidden = true;
+    sheet.setAttribute("role", "dialog");
+    sheet.setAttribute("aria-modal", "true");
+    sheet.innerHTML =
+      '<button class="sheet-handle" type="button" aria-label="Close"></button>' +
+      '<div class="sheet-body"></div>';
+    document.body.appendChild(sOverlay);
+    document.body.appendChild(sheet);
+    var body = sheet.querySelector(".sheet-body");
+    var handle = sheet.querySelector(".sheet-handle");
+    var isOpen = false;
+    var restoreTo = null;
+    var vv = window.visualViewport;
+
+    // When the keyboard opens the visual viewport shrinks: pin the sheet
+    // above it, cap its height to the visible area, and keep the focused
+    // field in view (instead of the browser shoving the page around).
+    function vvSync() {
+      if (!isOpen || !vv) return;
+      var kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      sheet.style.bottom = kb + "px";
+      sheet.style.maxHeight = Math.round(vv.height * 0.9) + "px";
+      var ae = document.activeElement;
+      if (kb > 0 && ae && sheet.contains(ae) && ae.scrollIntoView) {
+        ae.scrollIntoView({ block: "nearest" });
+      }
+    }
+    sheet.addEventListener("focusin", function () { setTimeout(vvSync, 250); });
+
+    function sheetFocusables() {
+      return Array.prototype.slice
+        .call(sheet.querySelectorAll("a[href], button, input, textarea, [tabindex]"))
+        .filter(function (el) {
+          return !el.disabled && el.tabIndex !== -1 && el.offsetParent !== null;
+        });
+    }
+    function onSheetKey(e) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      var f = sheetFocusables();
+      if (!f.length) return;
+      var first = f[0];
+      var last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    // drag-down to dismiss (pointer events, simple threshold)
+    var dragFrom = null;
+    var draggedFar = false;
+    handle.addEventListener("pointerdown", function (e) {
+      dragFrom = e.clientY;
+      draggedFar = false;
+      sheet.classList.add("is-dragging");
+      if (handle.setPointerCapture) handle.setPointerCapture(e.pointerId);
+    });
+    handle.addEventListener("pointermove", function (e) {
+      if (dragFrom == null) return;
+      var dy = Math.max(0, e.clientY - dragFrom);
+      if (dy > 8) draggedFar = true;
+      sheet.style.transform = "translateY(" + dy + "px)";
+    });
+    function endDrag(e) {
+      if (dragFrom == null) return;
+      var dy = Math.max(0, e.clientY - dragFrom);
+      dragFrom = null;
+      sheet.classList.remove("is-dragging");
+      sheet.style.transform = "";
+      if (dy > 90) close();
+    }
+    handle.addEventListener("pointerup", endDrag);
+    handle.addEventListener("pointercancel", endDrag);
+    handle.addEventListener("click", function () {
+      if (!draggedFar) close(); // a plain tap on the handle closes
+      draggedFar = false;
+    });
+
+    function open(contentEl, opts) {
+      var wasOpen = isOpen;
+      if (!wasOpen) restoreTo = document.activeElement;
+      body.innerHTML = "";
+      body.appendChild(contentEl);
+      body.scrollTop = 0;
+      sOverlay.hidden = false;
+      sheet.hidden = false;
+      if (!wasOpen) {
+        sOverlay.classList.remove("is-closing");
+        sheet.classList.remove("is-closing");
+        void sheet.offsetWidth; // paint the resting state before opening
+        sOverlay.classList.add("is-open");
+        sheet.classList.add("is-open");
+        document.addEventListener("keydown", onSheetKey);
+        if (vv) {
+          vv.addEventListener("resize", vvSync);
+          vv.addEventListener("scroll", vvSync);
+        }
+        isOpen = true;
+      }
+      vvSync();
+      var target = opts && opts.focusHandle ? handle : sheetFocusables()[0] || handle;
+      if (target) target.focus();
+    }
+
+    function close() {
+      if (!isOpen) return;
+      isOpen = false;
+      document.removeEventListener("keydown", onSheetKey);
+      if (vv) {
+        vv.removeEventListener("resize", vvSync);
+        vv.removeEventListener("scroll", vvSync);
+      }
+      sOverlay.classList.add("is-closing");
+      sOverlay.classList.remove("is-open");
+      sheet.classList.add("is-closing");
+      sheet.classList.remove("is-open");
+      setTimeout(function () {
+        sOverlay.hidden = true;
+        sheet.hidden = true;
+        sOverlay.classList.remove("is-closing");
+        sheet.classList.remove("is-closing");
+        sheet.style.bottom = "";
+        sheet.style.maxHeight = "";
+      }, reduceMotion ? 0 : 260);
+      if (restoreTo && restoreTo.focus) restoreTo.focus();
+    }
+
+    sOverlay.addEventListener("click", close);
+    sheet.addEventListener("click", function (e) {
+      if (e.target.closest("[data-close]")) close();
+    });
+
+    sheetApi = { open: open, close: close, isOpen: function () { return isOpen; } };
+    return sheetApi;
+  }
+
+  // ---- More menu (mobile tab bar): Timeline, About, Write to Fahim ----
+
+  var moreContent = null;
+  var moreBtn = document.querySelector(".tabbar .more");
+  if (moreBtn) {
+    moreBtn.addEventListener("click", function () {
+      if (!moreContent) {
+        moreContent = document.createElement("div");
+        moreContent.innerHTML =
+          '<nav class="sheet-rows" aria-label="More pages">' +
+          '<a class="sheet-row" href="/timeline"><span class="eyebrow">The story of 2026</span><span class="row-title">Timeline</span></a>' +
+          '<a class="sheet-row" href="/about"><span class="eyebrow">Why this exists · sources</span><span class="row-title">About this page</span></a>' +
+          '<button class="sheet-row" type="button"><span class="eyebrow">Say hello</span><span class="row-title">Write to Fahim</span></button>' +
+          "</nav>";
+        moreContent.querySelector("button.sheet-row").addEventListener("click", function () {
+          openDrawer(); // swaps the open sheet's content to the contact form
+        });
+      }
+      getSheet().open(moreContent);
+    });
+  }
+
   // ---- "Made with love by Faahim" message drawer ----
+  // One shared content node: mounted in the centered dialog on desktop,
+  // in the bottom sheet on phones (<720px).
 
   var overlay = null;
   var lastFocus = null;
+  var msgContent = null;
 
   function focusables() {
     return Array.prototype.slice
@@ -619,13 +841,10 @@
     }
   }
 
-  function buildDrawer() {
-    overlay = document.createElement("div");
-    overlay.className = "msg-overlay";
-    overlay.hidden = true;
-    overlay.innerHTML =
-      '<div class="msg-panel" role="dialog" aria-modal="true" aria-labelledby="msg-title">' +
-      '<button class="msg-x" type="button" data-close aria-label="Close">×</button>' +
+  function buildMsgContent() {
+    msgContent = document.createElement("div");
+    msgContent.className = "msg-content";
+    msgContent.innerHTML =
       '<p class="eyebrow">Say hello</p>' +
       '<h3 id="msg-title">A note for Fahim</h3>' +
       '<p class="msg-intro">Hi — I’m Fahim. I tend this page with a lot of help from the watchers of the nest. Corrections, official links we missed, or just a kind word — all of it is welcome here.</p>' +
@@ -647,18 +866,12 @@
       "<p><strong>Thank you — Fahim reads every message.</strong></p>" +
       "<p>It means a lot that you took a moment. Be kind to yourself, and keep an eye on the nest.</p>" +
       '<button type="button" class="btn quiet" data-close>Close</button>' +
-      "</div>" +
       "</div>";
-    document.body.appendChild(overlay);
 
-    overlay.addEventListener("click", function (e) {
-      if (e.target === overlay || e.target.closest("[data-close]")) closeDrawer();
-    });
-
-    var form = overlay.querySelector(".msg-form");
+    var form = msgContent.querySelector(".msg-form");
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var errorEl = overlay.querySelector(".msg-error");
+      var errorEl = msgContent.querySelector(".msg-error");
       var submit = form.querySelector('button[type="submit"]');
       var message = form.elements.message.value.trim();
       if (!message) {
@@ -687,7 +900,7 @@
         .then(function (result) {
           if (result.ok) {
             form.hidden = true;
-            var done = overlay.querySelector(".msg-done");
+            var done = msgContent.querySelector(".msg-done");
             done.hidden = false;
             done.querySelector("[data-close]").focus();
           } else {
@@ -706,16 +919,41 @@
     });
   }
 
+  function buildDrawer() {
+    overlay = document.createElement("div");
+    overlay.className = "msg-overlay";
+    overlay.hidden = true;
+    overlay.innerHTML =
+      '<div class="msg-panel" role="dialog" aria-modal="true" aria-labelledby="msg-title">' +
+      '<button class="msg-x" type="button" data-close aria-label="Close">×</button>' +
+      "</div>";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay || e.target.closest("[data-close]")) closeDrawer();
+    });
+  }
+
+  var mobileMq = window.matchMedia("(max-width: 719px)");
+
   function openDrawer() {
+    if (!msgContent) buildMsgContent();
+    if (mobileMq.matches) {
+      // Phones: Vaul-style bottom sheet (keyboard-aware). Focus rests on the
+      // handle so the keyboard only opens when a field is tapped.
+      getSheet().open(msgContent, { focusHandle: true });
+      return;
+    }
     if (!overlay) buildDrawer();
+    var panel = overlay.querySelector(".msg-panel");
+    if (msgContent.parentNode !== panel) panel.appendChild(msgContent);
     lastFocus = document.activeElement;
     overlay.hidden = false;
     overlay.classList.remove("is-closing");
     void overlay.offsetWidth; // paint the resting state before opening
     overlay.classList.add("is-open");
     document.addEventListener("keydown", onKeydown);
-    var field = overlay.querySelector(".msg-form:not([hidden]) input[name='name']") ||
-      overlay.querySelector(".msg-done:not([hidden]) [data-close]");
+    var field = msgContent.querySelector(".msg-form:not([hidden]) input[name='name']") ||
+      msgContent.querySelector(".msg-done:not([hidden]) [data-close]");
     if (field) field.focus();
   }
 
