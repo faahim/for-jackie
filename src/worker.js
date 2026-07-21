@@ -9,6 +9,9 @@
  *   cand:<iso>-<hash>        — candidate update awaiting the verification agent
  *   seen:<source>:<hash>     — dedupe marker for watched feed items
  *   pagehash:<host>          — last content hash for watched pages
+ *   msg:<iso>-<hash8>        — visitor messages (contact) and wall notes
+ *                              (kind:"note", status:"pending"|"approved")
+ *   wall:<iso>-<hash8>       — APPROVED wall notes only {name, message, approvedAt}
  */
 
 const WATCHED_FEEDS = [
@@ -88,6 +91,17 @@ async function handleApi(request, url, env, ctx) {
     return await handleIncomingMessage(request, env);
   }
 
+  if (route === "GET /api/wall") {
+    // Public wall: APPROVED notes only, newest first. The wall:* records hold
+    // exactly {name, message, approvedAt} — but map the fields explicitly so
+    // nothing private (contact, IP, page) can ever leak into this payload.
+    const entries = await listWithValues(env, "wall:", 200);
+    const notes = entries
+      .map((e) => ({ name: e.name || null, message: e.message, approvedAt: e.approvedAt }))
+      .reverse();
+    return json({ ok: true, notes });
+  }
+
   // Everything below requires the publish token.
   if (!(await authorized(request, env))) {
     return json({ ok: false, error: "unauthorized" }, 401);
@@ -96,6 +110,49 @@ async function handleApi(request, url, env, ctx) {
   if (route === "GET /api/messages") {
     const messages = await listWithValues(env, "msg:", 50);
     return json({ ok: true, messages: messages.reverse() }); // newest first
+  }
+
+  if (route === "GET /api/wall/pending") {
+    const messages = await listWithValues(env, "msg:", 200);
+    const pending = messages
+      .filter((m) => m.kind === "note" && m.status === "pending")
+      .reverse(); // newest first
+    return json({ ok: true, pending });
+  }
+
+  if (route === "POST /api/wall/approve") {
+    const body = await request.json();
+    const key = body && typeof body.key === "string" ? body.key : "";
+    if (!key.startsWith("msg:")) {
+      return json({ ok: false, error: "key must be a msg:* key" }, 400);
+    }
+    const record = await env.KV.get(key, "json");
+    if (!record) return json({ ok: false, error: "message not found" }, 404);
+    if (record.kind !== "note") {
+      return json({ ok: false, error: "not a wall note" }, 400);
+    }
+    const approvedAt = new Date().toISOString();
+    const hash = key.slice(-8); // reuse the msg hash so the two records stay linked
+    const wallKey = `wall:${approvedAt}-${hash}`;
+    // The public record carries ONLY what the wall displays — never contact/IP.
+    await env.KV.put(
+      wallKey,
+      JSON.stringify({ name: record.name || null, message: record.message, approvedAt })
+    );
+    await env.KV.put(key, JSON.stringify({ ...record, status: "approved", approvedAt, wallKey }));
+    console.log(JSON.stringify({ level: "info", event: "wall-approve", key, wallKey }));
+    return json({ ok: true, wallKey });
+  }
+
+  if (route === "POST /api/wall/remove") {
+    const body = await request.json();
+    const key = body && typeof body.key === "string" ? body.key : "";
+    if (!key.startsWith("wall:")) {
+      return json({ ok: false, error: "key must be a wall:* key" }, 400);
+    }
+    await env.KV.delete(key);
+    console.log(JSON.stringify({ level: "info", event: "wall-remove", key }));
+    return json({ ok: true, removed: key });
   }
 
   if (route === "POST /api/publish") {
@@ -175,11 +232,14 @@ async function handleApi(request, url, env, ctx) {
 // ---------- visitor messages ----------
 
 /**
- * POST /api/messages — unauthenticated contact form from the site footer.
- * Validates lengths, drops honeypot hits silently, best-effort rate limit of
- * 5 messages/hour per IP (KV counter), stores as msg:<iso>-<hash8>, and
- * forwards to Telegram when the secrets exist. Storage always wins: Telegram
- * failures are logged and swallowed.
+ * POST /api/messages — unauthenticated contact form from the site footer, and
+ * (with {kind:"note"}) Wall of Love submissions. Notes are shorter (≤500),
+ * require explicit {consent:true}, and are stored status:"pending" — nothing
+ * user-submitted ever displays without a /api/wall/approve. Validates lengths,
+ * drops honeypot hits silently, best-effort rate limit of 5 messages/hour per
+ * IP (KV counter), stores as msg:<iso>-<hash8>, and forwards to Telegram when
+ * the secrets exist. Storage always wins: Telegram failures are logged and
+ * swallowed.
  */
 async function handleIncomingMessage(request, env) {
   let body;
@@ -197,10 +257,26 @@ async function handleIncomingMessage(request, env) {
     return json({ ok: true });
   }
 
+  const kind = body.kind === "note" ? "note" : "contact";
   const message = typeof body.message === "string" ? body.message.trim() : "";
-  if (!message) return json({ ok: false, error: "message is required" }, 400);
-  if (message.length > 2000) return json({ ok: false, error: "message too long (2000 characters max)" }, 400);
-  const name = typeof body.name === "string" ? body.name.trim().slice(0, 120) : "";
+  if (!message) {
+    return json({ ok: false, error: kind === "note" ? "please write a note first" : "message is required" }, 400);
+  }
+  if (kind === "note") {
+    if (message.length > 500) {
+      return json({ ok: false, error: "note too long (500 characters max)" }, 400);
+    }
+    if (body.consent !== true) {
+      return json(
+        { ok: false, error: "consent is required — please confirm your note may be displayed publicly" },
+        400
+      );
+    }
+  } else if (message.length > 2000) {
+    return json({ ok: false, error: "message too long (2000 characters max)" }, 400);
+  }
+  const name =
+    typeof body.name === "string" ? body.name.trim().slice(0, kind === "note" ? 60 : 120) : "";
   const contact = typeof body.contact === "string" ? body.contact.trim().slice(0, 200) : "";
   const fromPage = typeof body.page === "string" ? body.page.trim().slice(0, 40) : "";
 
@@ -223,13 +299,19 @@ async function handleIncomingMessage(request, env) {
     page: fromPage || null,
     receivedAt,
   };
+  if (kind === "note") {
+    record.kind = "note";
+    record.status = "pending"; // displays only after POST /api/wall/approve
+    record.consent = true;
+  }
   await env.KV.put(key, JSON.stringify(record));
-  console.log(JSON.stringify({ level: "info", event: "message", key, bytes: message.length }));
+  console.log(JSON.stringify({ level: "info", event: "message", kind, key, bytes: message.length }));
 
   if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
     try {
+      const label = kind === "note" ? "📝 Wall note (pending)" : "✉️ Message";
       const text =
-        `💌 For Jackie — new message\n` +
+        `${label} — For Jackie\n` +
         `From: ${name || "anonymous"}${contact ? ` (${contact})` : ""}\n` +
         `Page: ${fromPage || "unknown"}\n\n${message}`;
       const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {

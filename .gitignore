@@ -3,3 +3,4 @@ node_modules/
 .DS_Store
 .publish-token
 CLAUDE.md
+.telegram-token

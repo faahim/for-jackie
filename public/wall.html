@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Story — For Jackie</title>
-<meta name="description" content="The full visual timeline of Jackie and Shadow's 2026 season, the rescue, and the recovery.">
+<title>Wall of Love — For Jackie</title>
+<meta name="description" content="A moderated community guestbook for Jackie the Big Bear bald eagle — leave a note of hope, read the community's light, and find wonderful things the nest family inspired.">
 <link rel="stylesheet" href="/styles.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%85%3C/text%3E%3C/svg%3E">
 <script>
@@ -28,7 +28,7 @@
 })();
 </script>
 </head>
-<body data-page="timeline">
+<body data-page="wall">
 
 <div class="strip">Community-run · <strong>Not affiliated</strong> with FOBBV or the Ojai Raptor Center · Every fact links to its source</div>
 <div class="alert-banner" id="alert-banner" role="status"></div>
@@ -39,8 +39,8 @@
     <div class="links">
       <a href="/">Status</a>
       <a href="/updates">Updates</a>
-      <a href="/wall">Wall of Love</a>
-      <a href="/timeline" aria-current="page">Timeline</a>
+      <a href="/wall" aria-current="page">Wall of Love</a>
+      <a href="/timeline">Timeline</a>
       <a href="/rumors">Rumor Check</a>
       <a href="/help">How to Help</a>
     </div>
@@ -51,17 +51,48 @@
 
 <main>
   <div class="page-head reveal">
-    <p class="eyebrow">The story of 2026</p>
-    <h1>How we got here</h1>
-    <p class="intro">Jackie has held this territory above Big Bear Lake since 2017, with Shadow at her side since 2018. FOBBV's cameras have carried their story — Simba in 2019, Spirit in 2022, Sunny and Gizmo in 2025 — into millions of homes. This year has been their most dramatic season yet.</p>
+    <p class="eyebrow">From all of us</p>
+    <h1>The Wall of Love</h1>
+    <p class="intro">A place to leave a little light for Jackie, Shadow, Sandy, Luna, and each other. Every note here was written by someone who watches the nest, and read by a volunteer before it appeared, so the wall stays as kind as the community it comes from.</p>
   </div>
 
   <section class="reveal">
-    <ol class="timeline" id="timeline">
-      <li class="skel-card" aria-hidden="true"><span class="skel-bar w30"></span><span class="skel-bar w55"></span><span class="skel-bar w95"></span><span class="skel-bar w80"></span></li>
-      <li class="skel-card" aria-hidden="true"><span class="skel-bar w30"></span><span class="skel-bar w55"></span><span class="skel-bar w95"></span><span class="skel-bar w80"></span></li>
-      <li class="skel-card" aria-hidden="true"><span class="skel-bar w30"></span><span class="skel-bar w55"></span><span class="skel-bar w95"></span><span class="skel-bar w80"></span></li>
-    </ol>
+    <p class="eyebrow">Add your voice</p>
+    <h2>Leave a note</h2>
+    <div class="note-card">
+      <form id="wall-form" novalidate>
+        <label class="msg-field"><span class="lbl">Your name <em>· optional</em></span>
+        <input name="name" maxlength="60" autocomplete="name"></label>
+        <label class="msg-field"><span class="lbl lbl-row">Your note <span class="counter" id="wall-count" aria-hidden="true">0 / 500</span></span>
+        <textarea name="message" maxlength="500" required rows="4"></textarea></label>
+        <label class="hp" aria-hidden="true">Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label>
+        <label class="consent"><input type="checkbox" name="consent"><span>My note may be displayed publicly on this page.</span></label>
+        <p class="msg-error" hidden></p>
+        <button type="submit" class="btn">Add my note</button>
+      </form>
+      <div class="wall-done" hidden>
+        <p><strong>Thank you.</strong> A volunteer reads every note before it appears — usually within a few hours.</p>
+        <p>Come back soon; the wall grows a little every day.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <p class="eyebrow">The wall</p>
+    <h2>Notes from the community</h2>
+    <div class="wall" id="wall">
+      <div class="skel-card" aria-hidden="true"><span class="skel-bar w95"></span><span class="skel-bar w80"></span><span class="skel-bar w30"></span></div>
+      <div class="skel-card" aria-hidden="true"><span class="skel-bar w95"></span><span class="skel-bar w55"></span><span class="skel-bar w30"></span></div>
+      <div class="skel-card" aria-hidden="true"><span class="skel-bar w80"></span><span class="skel-bar w95"></span><span class="skel-bar w30"></span></div>
+      <div class="skel-card" aria-hidden="true"><span class="skel-bar w95"></span><span class="skel-bar w80"></span><span class="skel-bar w30"></span></div>
+    </div>
+  </section>
+
+  <section class="reveal" id="community" hidden>
+    <p class="eyebrow">From the community</p>
+    <h2>Wonderful things the nest inspired</h2>
+    <p class="section-intro">Art, words, and kindness made by this community and shared publicly, gathered here with credit and a link to the original.</p>
+    <div class="community-grid" id="community-list"></div>
   </section>
 </main>
 
@@ -69,7 +100,6 @@
   <main style="padding-bottom:0;">
     <nav>
       <a href="/about">About this page &amp; sources</a>
-      <a href="/wall">Wall of Love</a>
       <a href="/timeline">Timeline</a>
       <a rel="noopener" target="_blank" href="https://friendsofbigbearvalley.org/livestream/">Official FOBBV livestream</a>
       <a rel="noopener" target="_blank" href="https://www.ojairaptorcenter.org/">Ojai Raptor Center</a>
@@ -89,7 +119,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M5 12h14M5 18h9"/></svg>
     Updates
   </a>
-  <a href="/wall">
+  <a href="/wall" aria-current="page">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.3-7-9.3C5 8 7 6 9.3 6c1.2 0 2.1.5 2.7 1.4C12.6 6.5 13.5 6 14.7 6 17 6 19 8 19 10.7c0 5-7 9.3-7 9.3z"/></svg>
     Wall
   </a>

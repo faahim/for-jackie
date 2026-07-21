@@ -723,11 +723,120 @@ html.js .reveal.is-in {
 .msg-done p { margin: 0 0 0.8rem; max-width: 48ch; }
 .msg-done p:first-child { color: var(--stable); }
 
+/* ---- wall of love ---- */
+.note-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.4rem 1.5rem 1.5rem;
+  box-shadow: var(--shadow);
+}
+.note-card .lbl-row { display: flex; justify-content: space-between; align-items: baseline; gap: 0.8rem; }
+.note-card .counter {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+.note-card textarea { min-height: 5.5rem; }
+.consent {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  margin: 0.1rem 0 1rem;
+  color: var(--muted);
+  font-size: 0.98rem;
+  max-width: 52ch;
+  cursor: pointer;
+  position: relative;
+}
+.consent input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0.3rem 0 0;
+  accent-color: var(--stable);
+  cursor: pointer;
+}
+.wall-done p { margin: 0 0 0.6rem; max-width: 52ch; }
+.wall-done p strong { color: var(--stable); }
+.wall-done p:last-child { margin: 0; color: var(--muted); }
+
+/* masonry-ish columns; every child reserves its own space (break-inside) */
+.wall { columns: 1; column-gap: 1rem; min-height: 18rem; }
+@media (min-width: 560px) { .wall { columns: 2; } }
+.wall > * { break-inside: avoid; margin: 0 0 1rem; }
+.wall-note {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.05rem 1.2rem 0.95rem;
+  box-shadow: var(--shadow);
+}
+.wall-note .txt {
+  font-family: var(--display);
+  font-size: 1.1rem;
+  line-height: 1.5;
+  margin: 0 0 0.7rem;
+  overflow-wrap: anywhere;
+}
+.wall-note .who {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.8rem;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.wall-note .who .date { flex: none; }
+.wall-empty { background: var(--surface-2); border-radius: 12px; padding: 1.5rem 1.5rem 1.6rem; color: var(--muted); }
+.wall-empty p { margin: 0; max-width: 48ch; }
+/* gentle staggered entrance on cold load only (JS sets per-card delays);
+   transform-based, so card positions/heights never shift layout */
+.wall-stagger .wall-note { animation: wall-in 400ms var(--ease-smooth-out) both; }
+@keyframes wall-in { from { opacity: 0; transform: translateY(8px); } }
+
+.community-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 640px) { .community-grid { grid-template-columns: 1fr 1fr; } }
+.community-card {
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold-graphic);
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem 1.05rem;
+  box-shadow: var(--shadow);
+}
+.community-card blockquote {
+  margin: 0 0 0.7rem;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+.community-card blockquote::before { content: "\201C"; color: var(--muted); }
+.community-card blockquote::after { content: "\201D"; color: var(--muted); }
+.community-card figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
 /* ---- calm for those who asked for it ---- */
 @media (prefers-reduced-motion: reduce) {
   .dot { animation: none; }
   .skel-bar, .skel-chip { animation: none; }
   .region-swap, .region-in { animation: none; }
+  .wall-stagger .wall-note { animation: none; }
   html { scroll-behavior: auto; }
   html.js .reveal { opacity: 1; translate: none; transition: none; }
   .explore-card, .explore-card .go, .btn, .src, .dock-pill,

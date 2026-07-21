@@ -185,6 +185,38 @@
       }
     }
 
+    if (page === "wall") {
+      // "From the community" — curated excerpts from the content doc.
+      // Hidden entirely unless content.community[] exists and has entries.
+      var communitySection = document.getElementById("community");
+      el = document.getElementById("community-list");
+      if (communitySection && el) {
+        var community = Array.isArray(content.community) ? content.community : [];
+        if (community.length) {
+          setHtml(
+            el,
+            community
+              .map(function (c) {
+                return (
+                  '<figure class="community-card"><blockquote>' + esc(c.quote) + "</blockquote>" +
+                  "<figcaption>" + esc(c.author || "A community member") +
+                  (c.url
+                    ? ' <a class="src" rel="noopener" target="_blank" href="' + esc(c.url) + '">' +
+                      esc(c.sourceLabel || "source") + "</a>"
+                    : "") +
+                  "</figcaption></figure>"
+                );
+              })
+              .join(""),
+            mode
+          );
+          communitySection.hidden = false;
+        } else {
+          communitySection.hidden = true;
+        }
+      }
+    }
+
     if (page === "timeline") {
       el = document.getElementById("timeline");
       if (el && content.timeline) {
@@ -263,6 +295,148 @@
   document.addEventListener("visibilitychange", function () {
     if (!document.hidden) load();
   });
+
+  // ---- Wall of Love: cache-first notes + moderated submissions ----
+
+  function setupWall() {
+    var wallEl = document.getElementById("wall");
+    if (!wallEl) return;
+    var WALL_CACHE = "fj:wall:v1";
+    var lastNotes = null; // serialized form of what's rendered
+
+    function noteHtml(n) {
+      var d = new Date(n.approvedAt);
+      var when = isNaN(d)
+        ? ""
+        : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      return (
+        '<div class="wall-note"><p class="txt">' + esc(n.message) + "</p>" +
+        '<div class="who"><span>' + esc(n.name || "A friend of the nest") + "</span>" +
+        (when ? '<span class="date">' + esc(when) + "</span>" : "") +
+        "</div></div>"
+      );
+    }
+
+    function renderWall(notes, mode) {
+      var html = notes.length
+        ? notes.map(noteHtml).join("")
+        : '<div class="wall-empty"><p>The wall is waiting for its very first note. If the nest family has meant something to you, yours could be the one that starts it.</p></div>';
+      // Stagger only the cold-load entrance; later refreshes cross-fade quietly.
+      if (mode === "enter" && !reduceMotion && notes.length) {
+        wallEl.classList.add("wall-stagger");
+      } else {
+        wallEl.classList.remove("wall-stagger");
+      }
+      setHtml(wallEl, html, mode);
+      if (wallEl.classList.contains("wall-stagger")) {
+        Array.prototype.slice.call(wallEl.children).forEach(function (card, i) {
+          card.style.animationDelay = Math.min(i * 45, 400) + "ms";
+        });
+      }
+    }
+
+    var cachedNotes = null;
+    try { cachedNotes = JSON.parse(localStorage.getItem(WALL_CACHE)); } catch (e) { /* fine */ }
+    if (cachedNotes && Array.isArray(cachedNotes)) {
+      renderWall(cachedNotes, "cache"); // synchronous, silent — before first paint
+      lastNotes = JSON.stringify(cachedNotes);
+    }
+
+    function loadWall() {
+      fetch("/api/wall", { cache: "no-store" })
+        .then(function (res) {
+          if (!res.ok) throw new Error("api " + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          if (!data || !Array.isArray(data.notes)) return;
+          var sig = JSON.stringify(data.notes);
+          try { localStorage.setItem(WALL_CACHE, sig); } catch (e) { /* fine */ }
+          if (sig !== lastNotes) {
+            renderWall(data.notes, lastNotes === null ? "enter" : "update");
+            lastNotes = sig;
+          }
+        })
+        .catch(function (err) {
+          console.log("wall load failed", err);
+          if (lastNotes === null) {
+            renderWall([], "enter"); // clear the skeletons; show the invitation
+            lastNotes = "[]";
+          }
+        });
+    }
+    loadWall();
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) loadWall();
+    });
+
+    // ---- submission: pending until a volunteer approves, and the form says so ----
+    var form = document.getElementById("wall-form");
+    if (!form) return;
+    var counter = document.getElementById("wall-count");
+    if (counter) {
+      form.elements.message.addEventListener("input", function () {
+        var len = form.elements.message.value.length;
+        var text = len + " / 500";
+        if (counter.textContent !== text) counter.textContent = text;
+      });
+    }
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var errorEl = form.querySelector(".msg-error");
+      var submit = form.querySelector('button[type="submit"]');
+      var message = form.elements.message.value.trim();
+      if (!message) {
+        errorEl.textContent = "Please write a note first — even a few words are plenty.";
+        errorEl.hidden = false;
+        form.elements.message.focus();
+        return;
+      }
+      if (!form.elements.consent.checked) {
+        errorEl.textContent = "Please tick the box confirming your note may be displayed publicly.";
+        errorEl.hidden = false;
+        form.elements.consent.focus();
+        return;
+      }
+      errorEl.hidden = true;
+      submit.disabled = true;
+      submit.textContent = "Sending…";
+      fetch("/api/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          kind: "note",
+          name: form.elements.name.value.trim(),
+          message: message,
+          consent: true,
+          website: form.elements.website.value,
+          page: page,
+        }),
+      })
+        .then(function (res) {
+          return res.json().then(function (data) { return { ok: res.ok && data.ok !== false, data: data }; });
+        })
+        .then(function (result) {
+          if (result.ok) {
+            form.hidden = true;
+            var done = document.querySelector(".wall-done");
+            if (done) done.hidden = false;
+          } else {
+            errorEl.textContent = result.data.error || "Something went wrong — please try again.";
+            errorEl.hidden = false;
+          }
+        })
+        .catch(function () {
+          errorEl.textContent = "Couldn’t reach the nest — please try again in a moment.";
+          errorEl.hidden = false;
+        })
+        .then(function () {
+          submit.disabled = false;
+          submit.textContent = "Add my note";
+        });
+    });
+  }
+  if (page === "wall") setupWall();
 
   // ---- soothing first-view reveals (once, staggered, ease-out) ----
 
