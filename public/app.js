@@ -261,26 +261,64 @@
   function setupReveals() {
     var els = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
     if (!els.length) return;
+
+    // A soothing animation must NEVER hide content: force-reveal everything.
+    function finish() {
+      els.forEach(function (el) {
+        el.classList.add("is-in");
+        el.style.transitionDelay = "";
+      });
+    }
+
     if (reduceMotion || !("IntersectionObserver" in window)) {
-      els.forEach(function (el) { el.classList.add("is-in"); });
+      finish();
       return;
     }
+
+    // Above-the-fold content is revealed via a synchronous geometry check —
+    // never trust the observer's first callback for what's already on screen
+    // (it can misreport while a cross-document view transition holds rendering).
+    var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+    var delay = 0;
+    var onScreen = [];
+    var pending = [];
+    els.forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      if (vh > 0 && r.top < vh && r.bottom > 0) {
+        el.style.transitionDelay = delay + "ms";
+        delay += 70; // small stagger between elements arriving together
+        onScreen.push(el);
+      } else {
+        pending.push(el);
+      }
+    });
+    // Double rAF so the hidden state paints once and the transition can run.
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        onScreen.forEach(function (el) { el.classList.add("is-in"); });
+      });
+    });
+
     var io = new IntersectionObserver(
       function (entries) {
-        var delay = 0;
         entries.forEach(function (entry) {
           if (!entry.isIntersecting) return;
-          var el = entry.target;
-          el.style.transitionDelay = delay + "ms";
-          delay += 70; // small stagger between elements arriving together
-          el.classList.add("is-in");
-          io.unobserve(el);
-          setTimeout(function () { el.style.transitionDelay = ""; }, 1200);
+          entry.target.classList.add("is-in");
+          io.unobserve(entry.target);
         });
       },
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.05 }
+      { threshold: 0 }
     );
-    els.forEach(function (el) { io.observe(el); });
+    pending.forEach(function (el) { io.observe(el); });
+
+    // Hard safety net: whatever happens above, nothing stays hidden past ~800ms.
+    // (Below-the-fold elements finish their fade off-screen — invisible cost.)
+    setTimeout(function () {
+      io.disconnect();
+      finish();
+    }, 800);
+    // Belt and suspenders for bfcache restores.
+    window.addEventListener("pageshow", finish);
   }
   setupReveals();
 
