@@ -8,6 +8,7 @@
     "directory": "public",
     "binding": "ASSETS"
   },
+  "workers_dev": true,
   "routes": [
     { "pattern": "forjackie.org", "custom_domain": true },
     { "pattern": "www.forjackie.org", "custom_domain": true }
