@@ -5,26 +5,53 @@
    humanist feel. Variable woff2, latin subset, ~23KB + ~38KB italic. */
 @font-face {
   font-family: "Lora";
-  src: url("/fonts/lora-latin-var.woff2") format("woff2");
-  font-weight: 400 700;
+  src: url("/fonts/lora-latin-var.woff2?v=3") format("woff2");
+  font-weight: 400 700; /* variable range — verified with fontTools */
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Lora";
-  src: url("/fonts/lora-latin-var-italic.woff2") format("woff2");
+  src: url("/fonts/lora-latin-var-italic.woff2?v=3") format("woff2");
   font-weight: 400 700;
   font-style: italic;
   font-display: swap;
 }
 /* Metric-matched local fallback while Lora loads — minimizes CLS on the swap
-   (approximated per web.dev size-adjust guidance from Lora's font metrics). */
+   (overrides from Lora's real metrics: upm 1000, asc 1006, desc 274). */
 @font-face {
   font-family: "Lora-fallback";
   src: local("Georgia"), local("Times New Roman");
   size-adjust: 106%;
-  ascent-override: 95%;
-  descent-override: 25.6%;
+  ascent-override: 94.9%;
+  descent-override: 25.8%;
+  line-gap-override: 0%;
+}
+
+/* Self-hosted body sans for platforms without Seravek/Gill Sans. Cabin:
+   humanist, Gill Sans-descended — Android (and Windows) get an intentional
+   face instead of Roboto. Variable woff2, latin subset, ~30KB per style. */
+@font-face {
+  font-family: "Cabin";
+  src: url("/fonts/cabin-latin-var.woff2?v=3") format("woff2");
+  font-weight: 400 700; /* variable range — verified with fontTools */
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Cabin";
+  src: url("/fonts/cabin-latin-var-italic.woff2?v=3") format("woff2");
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: swap;
+}
+/* Fallback metrics from Cabin's real tables: upm 2000, asc 1930, desc 500. */
+@font-face {
+  font-family: "Cabin-fallback";
+  src: local("Helvetica Neue"), local("Arial");
+  size-adjust: 100.5%;
+  ascent-override: 96%;
+  descent-override: 24.9%;
   line-gap-override: 0%;
 }
 
@@ -54,7 +81,9 @@
   /* Palatino first: Mac/Windows keep their native face and never download
      Lora; Android/Linux (no Palatino) fall through to self-hosted Lora. */
   --display: Palatino, "Palatino Linotype", "Book Antiqua", "Lora", "Lora-fallback", Georgia, serif;
-  --body: Seravek, "Gill Sans", "Gill Sans MT", "Segoe UI", system-ui, sans-serif;
+  /* Apple keeps Seravek/Gill Sans; everyone else (Android, Windows, Linux)
+     gets self-hosted Cabin — deliberate: consistent over per-OS Segoe. */
+  --body: Seravek, "Gill Sans", "Gill Sans MT", "Cabin", "Cabin-fallback", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
   /* motion tokens (transitions.dev) */
   --duration-stagger: 40ms;
