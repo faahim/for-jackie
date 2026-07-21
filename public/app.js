@@ -452,10 +452,17 @@
       });
     }
 
-    if (reduceMotion || !("IntersectionObserver" in window)) {
+    // The rise is a first-view greeting, not a navigation effect: repeat
+    // visits to a page this session skip straight to visible (no motion).
+    var seenKey = "fj:revealed:" + page;
+    var seen = false;
+    try { seen = sessionStorage.getItem(seenKey) === "1"; } catch (e) { /* fine */ }
+
+    if (seen || reduceMotion || !("IntersectionObserver" in window)) {
       finish();
       return;
     }
+    try { sessionStorage.setItem(seenKey, "1"); } catch (e) { /* fine */ }
 
     // Above-the-fold content is revealed via a synchronous geometry check —
     // never trust the observer's first callback for what's already on screen
@@ -523,6 +530,9 @@
       pill.setAttribute("aria-hidden", "true");
       root.appendChild(pill);
 
+      // Rects are measured with offsetLeft/offsetTop, i.e. relative to the
+      // dock container itself (the positioned offsetParent) — never the
+      // viewport — so scroll position and dock placement can't skew the FLIP.
       function rect() {
         return { x: active.offsetLeft, y: active.offsetTop, w: active.offsetWidth, h: active.offsetHeight };
       }
@@ -557,9 +567,13 @@
           apply(prev, false); // First: where the pill sat on the previous page
           apply(r, true);     // Last + play: glide to the current item
         } else {
-          apply(r, false);
+          apply(r, false);    // no stored rect: just present at rest, no glide
         }
       }
+      // Hide the static fallback pill in the same synchronous step the JS pill
+      // becomes real — exactly one pill visible at every instant. If app.js
+      // never runs, has-pill is never added and the fallback stays.
+      root.classList.add("has-pill");
 
       window.addEventListener("resize", snap);
       window.addEventListener("pagehide", function () {

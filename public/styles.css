@@ -62,18 +62,24 @@
 }
 
 /* ---- cross-document page transition: a gentle rise, never a jolt ---- */
-::view-transition-old(root) { animation: vt-fade-out 180ms var(--ease-smooth-out) both; }
-::view-transition-new(root) { animation: vt-rise-in 300ms var(--ease-smooth-out) both; }
+/* Pure ~200ms opacity crossfade — no translate. Navigation should feel like
+   nothing moved, only the content quietly being different. */
+::view-transition-old(root) { animation: vt-fade-out 200ms var(--ease-smooth-out) both; }
+::view-transition-new(root) { animation: vt-fade-in 200ms var(--ease-smooth-out) both; }
 @keyframes vt-fade-out { to { opacity: 0; } }
-@keyframes vt-rise-in { from { opacity: 0; transform: translateY(10px); } }
-/* the navigation chrome stays put while the page glides beneath it */
+@keyframes vt-fade-in { from { opacity: 0; } }
+/* fixed chrome stays put while the page crossfades beneath it */
 nav.topnav { view-transition-name: topnav; }
 nav.tabbar { view-transition-name: tabbar; }
-/* Nav chrome swaps instantly; the dock pill glide is JS-driven (FLIP via
-   sessionStorage) so it fires deterministically on every navigation instead
+.strip { view-transition-name: strip; }
+.alert-banner { view-transition-name: alert-banner; }
+/* Chrome swaps instantly (no reanimation on navigation); the dock pill glide
+   is JS-driven (FLIP via sessionStorage) so it fires deterministically instead
    of depending on cross-document view-transition support. */
 ::view-transition-old(topnav), ::view-transition-new(topnav),
-::view-transition-old(tabbar), ::view-transition-new(tabbar) { animation-duration: 0ms; }
+::view-transition-old(tabbar), ::view-transition-new(tabbar),
+::view-transition-old(strip), ::view-transition-new(strip),
+::view-transition-old(alert-banner), ::view-transition-new(alert-banner) { animation-duration: 0ms; }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -182,7 +188,9 @@ p, li { text-wrap: pretty; }
   color: var(--pill-text);
   background: var(--pill-bg); /* no-JS fallback; JS swaps in the gliding pill */
 }
-html.js .topnav .links a[aria-current="page"] { background: transparent; }
+/* fallback hides only once the JS pill exists and is positioned (same
+   synchronous step), so exactly one pill is visible at every instant */
+.topnav .links.has-pill a[aria-current="page"] { background: transparent; }
 .topnav .fresh {
   font-family: var(--mono);
   font-size: 0.7rem;
@@ -256,7 +264,7 @@ html.js .topnav .links a[aria-current="page"] { background: transparent; }
   color: var(--pill-text);
   background: var(--pill-bg); /* no-JS fallback; JS swaps in the gliding pill */
 }
-html.js .tabbar a[aria-current="page"] { background: transparent; }
+.tabbar.has-pill a[aria-current="page"] { background: transparent; }
 .tabbar .dock-pill { border-radius: 16px; box-shadow: none; }
 
 main { max-width: 780px; margin: 0 auto; padding: 0 1.25rem 4rem; }
@@ -624,6 +632,10 @@ html.js .reveal.is-in {
   transition: opacity 450ms var(--ease-smooth-out),
               translate 450ms var(--ease-smooth-out);
 }
+/* CSS-only safety net: the js class is now set pre-paint by the inline head
+   script, so if app.js itself never arrives, reveal everything anyway. */
+html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out) 1.2s both; }
+@keyframes reveal-net { to { opacity: 1; translate: 0 0; } }
 /* gentle cross-fade when live content genuinely replaces rendered content */
 .region-swap { animation: region-swap 350ms var(--ease-in-out); }
 @keyframes region-swap { from { opacity: 0.35; } }
@@ -838,7 +850,7 @@ html.js .reveal.is-in {
   .region-swap, .region-in { animation: none; }
   .wall-stagger .wall-note { animation: none; }
   html { scroll-behavior: auto; }
-  html.js .reveal { opacity: 1; translate: none; transition: none; }
+  html.js .reveal { opacity: 1; translate: none; transition: none; animation: none; }
   .explore-card, .explore-card .go, .btn, .src, .dock-pill,
   .topnav .links a, .tabbar a, .msg-overlay, .msg-panel { transition: none; }
   .btn:active { scale: none; }
