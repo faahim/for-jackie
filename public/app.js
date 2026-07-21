@@ -69,29 +69,35 @@
     );
   }
 
-  function setHtml(el, html, animate) {
-    if (el.innerHTML === html) return;
+  // mode: "cache" (silent), "enter" (cold-load fade-in), "update" (cross-fade).
+  // Identical content is guaranteed zero DOM mutation: we compare against the
+  // exact string we last wrote (browser-serialized innerHTML is normalized and
+  // never compares equal, which would re-trigger animations for nothing).
+  function setHtml(el, html, mode) {
+    if (el.__fjHtml === html) return;
+    el.__fjHtml = html;
     el.innerHTML = html;
-    if (animate && !reduceMotion) {
-      el.classList.remove("region-swap");
-      void el.offsetWidth; // reflow so the animation can replay
-      el.classList.add("region-swap");
-    }
+    if (reduceMotion || mode === "cache") return;
+    var cls = mode === "update" ? "region-swap" : "region-in";
+    el.classList.remove("region-swap", "region-in");
+    void el.offsetWidth; // reflow so the animation can replay
+    el.classList.add(cls);
+  }
+
+  function setText(el, text) {
+    if (el && text && el.textContent !== text) el.textContent = text;
   }
 
   function renderStamps(content) {
     var stamp = content.meta && content.meta.updatedAt ? humanStamp(content.meta.updatedAt) : null;
-    var el = document.getElementById("fresh");
-    if (el) {
-      el.textContent = stamp || (content.meta && content.meta.lastVerified
-        ? "verified " + content.meta.lastVerified
-        : el.textContent);
-    }
-    el = document.getElementById("stamp");
-    if (el && stamp) el.textContent = "Verified facts · " + stamp;
+    setText(
+      document.getElementById("fresh"),
+      stamp || (content.meta && content.meta.lastVerified ? "verified " + content.meta.lastVerified : null)
+    );
+    if (stamp) setText(document.getElementById("stamp"), "Verified facts · " + stamp);
   }
 
-  function render(content, animate) {
+  function render(content, mode) {
     var el;
 
     renderStamps(content);
@@ -114,7 +120,7 @@
           el,
           "<h1>" + content.headline.title.replace("alive and stable", "<em>alive and stable</em>") + "</h1>" +
             '<p class="lede">' + esc(content.headline.lede) + "</p>",
-          animate
+          mode
         );
       }
       el = document.getElementById("chips");
@@ -129,19 +135,19 @@
               );
             })
             .join(""),
-          animate
+          mode
         );
       }
       el = document.getElementById("latest");
       if (el && content.updates) {
-        setHtml(el, content.updates.slice(0, 5).map(updateHtml).join(""), animate);
+        setHtml(el, content.updates.slice(0, 5).map(updateHtml).join(""), mode);
       }
       el = document.getElementById("unknowns");
       if (el && content.unknowns) {
         setHtml(
           el,
           content.unknowns.map(function (u) { return "<li>" + esc(u) + "</li>"; }).join(""),
-          animate
+          mode
         );
       }
     }
@@ -150,7 +156,7 @@
       el = document.getElementById("feed");
       if (el && content.updates) {
         // Every update, no cap — this page is the full record.
-        setHtml(el, content.updates.map(updateHtml).join(""), animate);
+        setHtml(el, content.updates.map(updateHtml).join(""), mode);
       }
     }
 
@@ -174,7 +180,7 @@
               );
             })
             .join(""),
-          animate
+          mode
         );
       }
     }
@@ -200,7 +206,7 @@
               );
             })
             .join(""),
-          animate
+          mode
         );
       }
     }
@@ -219,7 +225,7 @@
   var cached = readCache();
   if (cached && cached.meta) {
     try {
-      render(cached, false);
+      render(cached, "cache"); // synchronous, silent — before first paint
       lastRendered = cached.meta.updatedAt || null;
     } catch (e) {
       console.log("cache render failed", e);
@@ -239,7 +245,9 @@
         if (!content || !content.meta) return;
         writeCache(content);
         if (content.meta.updatedAt !== lastRendered) {
-          render(content, lastRendered !== null);
+          // Cold load (nothing rendered yet) fades in; a genuine content
+          // change cross-fades. Identical content never reaches this branch.
+          render(content, lastRendered === null ? "enter" : "update");
           lastRendered = content.meta.updatedAt || null;
         } else {
           renderStamps(content); // "today"/"yesterday" wording can drift across midnight
@@ -321,6 +329,74 @@
     window.addEventListener("pageshow", finish);
   }
   setupReveals();
+
+  // ---- dock pill: deterministic FLIP glide between pages ----
+  // The previous page stores the active pill's rect in sessionStorage on
+  // pagehide; on load we start the pill there and glide it to the current
+  // item. No view-transition dependency, no flakiness.
+
+  function setupDockPills() {
+    [
+      { root: document.querySelector(".topnav .links"), key: "fj:pill:top" },
+      { root: document.querySelector(".tabbar"), key: "fj:pill:tab" },
+    ].forEach(function (dock) {
+      var root = dock.root;
+      if (!root) return;
+      var active = root.querySelector('a[aria-current="page"]');
+      if (!active) return;
+      var pill = document.createElement("span");
+      pill.className = "dock-pill";
+      pill.setAttribute("aria-hidden", "true");
+      root.appendChild(pill);
+
+      function rect() {
+        return { x: active.offsetLeft, y: active.offsetTop, w: active.offsetWidth, h: active.offsetHeight };
+      }
+      function apply(r, animated) {
+        if (!animated) pill.style.transition = "none";
+        pill.style.transform = "translate(" + r.x + "px," + r.y + "px)";
+        pill.style.width = r.w + "px";
+        pill.style.height = r.h + "px";
+        if (!animated) {
+          void pill.offsetWidth; // commit without a tween
+          pill.style.transition = "";
+        }
+      }
+      function snap() {
+        var r = rect();
+        pill.style.opacity = r.w ? "" : "0"; // dock hidden at this width
+        if (r.w) apply(r, false);
+      }
+
+      var r = rect();
+      if (!r.w) {
+        pill.style.opacity = "0";
+      } else {
+        var prev = null;
+        try {
+          prev = JSON.parse(sessionStorage.getItem(dock.key));
+          sessionStorage.removeItem(dock.key);
+        } catch (e) { /* fine */ }
+        var samePlace = prev && prev.x === r.x && prev.w === r.w;
+        var sameRow = prev && Math.abs(prev.y - r.y) < r.h; // viewport changed → don't glide
+        if (prev && prev.w && !samePlace && sameRow && !reduceMotion) {
+          apply(prev, false); // First: where the pill sat on the previous page
+          apply(r, true);     // Last + play: glide to the current item
+        } else {
+          apply(r, false);
+        }
+      }
+
+      window.addEventListener("resize", snap);
+      window.addEventListener("pagehide", function () {
+        var out = rect();
+        if (out.w) {
+          try { sessionStorage.setItem(dock.key, JSON.stringify(out)); } catch (e) { /* fine */ }
+        }
+      });
+    });
+  }
+  setupDockPills();
 
   // ---- "Made with love by Faahim" message drawer ----
 
@@ -460,7 +536,7 @@
     document.removeEventListener("keydown", onKeydown);
     overlay.classList.add("is-closing");
     overlay.classList.remove("is-open");
-    var wait = reduceMotion ? 0 : 180;
+    var wait = reduceMotion ? 0 : 200; // matches the 180ms exit transition
     setTimeout(function () {
       overlay.hidden = true;
       overlay.classList.remove("is-closing");
@@ -468,6 +544,8 @@
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
-  var opener = document.getElementById("open-msg");
-  if (opener) opener.addEventListener("click", openDrawer);
+  // Every opener on the page ("Faahim", "Write to Fahim", "Send a correction…")
+  Array.prototype.slice.call(document.querySelectorAll("[data-open-msg]")).forEach(function (btn) {
+    btn.addEventListener("click", openDrawer);
+  });
 })();

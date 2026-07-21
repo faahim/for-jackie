@@ -16,6 +16,13 @@
   --danger-soft: #F2E6E3;
   --shadow: 0 1px 2px rgba(29, 43, 37, 0.06), 0 8px 24px rgba(29, 43, 37, 0.07);
   --shadow-lift: 0 2px 4px rgba(29, 43, 37, 0.07), 0 14px 32px rgba(29, 43, 37, 0.11);
+  --btn-bg: #326449;        /* darker than --stable: ≥4.5:1 with --btn-text */
+  --btn-text: #FAFBFA;
+  --pill-bg: var(--lake);
+  --pill-text: #FAFBFA;
+  --strip-bg: #1D2B25;      /* deep pine ink, mist text */
+  --strip-text: #F1F4F2;
+  --scrim: rgba(29, 43, 37, 0.45);
   --display: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif;
   --body: Seravek, "Gill Sans", "Gill Sans MT", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
@@ -45,6 +52,12 @@
     --danger-soft: #2E211D;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
     --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.35), 0 14px 32px rgba(0, 0, 0, 0.45);
+    --btn-bg: #74C094;      /* light green, dark ink text: ≥4.5:1 */
+    --btn-text: #0F1613;
+    --pill-text: #0F1613;   /* --pill-bg resolves to the light dark-theme lake */
+    --strip-bg: #1A241E;    /* slightly-elevated night pine, muted text */
+    --strip-text: #93A39B;
+    --scrim: rgba(0, 0, 0, 0.55);
   }
 }
 
@@ -56,13 +69,11 @@
 /* the navigation chrome stays put while the page glides beneath it */
 nav.topnav { view-transition-name: topnav; }
 nav.tabbar { view-transition-name: tabbar; }
-::view-transition-group(topnav),
-::view-transition-group(tabbar),
-::view-transition-group(dock-pill),
-::view-transition-group(tab-pill) {
-  animation-duration: 300ms;
-  animation-timing-function: var(--ease-smooth-out);
-}
+/* Nav chrome swaps instantly; the dock pill glide is JS-driven (FLIP via
+   sessionStorage) so it fires deterministically on every navigation instead
+   of depending on cross-document view-transition support. */
+::view-transition-old(topnav), ::view-transition-new(topnav),
+::view-transition-old(tabbar), ::view-transition-new(tabbar) { animation-duration: 0ms; }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -86,8 +97,8 @@ p, li { text-wrap: pretty; }
 
 /* ---- disclaimer strip ---- */
 .strip {
-  background: var(--ink);
-  color: var(--ground);
+  background: var(--strip-bg);
+  color: var(--strip-text);
   text-align: center;
   padding: 0.5rem 1rem;
   font-size: 0.68rem;
@@ -141,6 +152,7 @@ p, li { text-wrap: pretty; }
   margin-right: auto;
 }
 .topnav .links {
+  position: relative; /* anchors the JS-driven .dock-pill */
   display: none;
   align-items: center;
   gap: 4px;
@@ -151,6 +163,8 @@ p, li { text-wrap: pretty; }
 }
 @media (min-width: 720px) { .topnav .links { display: inline-flex; } }
 .topnav .links a {
+  position: relative;
+  z-index: 1; /* label reads above the gliding pill */
   color: var(--muted);
   text-decoration: none;
   font-size: 0.78rem;
@@ -162,21 +176,41 @@ p, li { text-wrap: pretty; }
   transition: color var(--duration-fast) var(--ease-smooth-out),
               background-color var(--duration-fast) var(--ease-smooth-out);
 }
-.topnav .links a:hover { color: var(--ink); }
+.topnav .links a:not([aria-current="page"]):hover { color: var(--ink); }
 .topnav .links a[aria-current="page"] {
-  color: var(--ink);
-  background: var(--surface);
-  box-shadow: 0 1px 2px rgba(29, 43, 37, 0.09), 0 3px 10px rgba(29, 43, 37, 0.08);
-  view-transition-name: dock-pill; /* the pill glides between pages */
+  color: var(--pill-text);
+  background: var(--pill-bg); /* no-JS fallback; JS swaps in the gliding pill */
 }
+html.js .topnav .links a[aria-current="page"] { background: transparent; }
 .topnav .fresh {
   font-family: var(--mono);
   font-size: 0.7rem;
   color: var(--muted);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  /* reserve room for the longest stamp ("updated Wednesday at 12:41 PM")
+     so text swaps can never shift layout */
+  min-width: 29ch;
+  text-align: right;
 }
-@media (max-width: 719px) { .topnav .fresh { margin-left: auto; } }
+@media (max-width: 719px) { .topnav .fresh { margin-left: auto; min-width: 0; } }
+
+/* the shared sliding pill behind the active dock item (FLIP-animated by JS) */
+.dock-pill {
+  position: absolute;
+  top: 0; left: 0;
+  width: 0; height: 0;
+  background: var(--pill-bg);
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(15, 22, 19, 0.22);
+  transform: translate(0, 0);
+  transition: transform var(--duration-fast) var(--ease-smooth-out),
+              width var(--duration-fast) var(--ease-smooth-out),
+              height var(--duration-fast) var(--ease-smooth-out);
+  will-change: transform, width;
+  z-index: 0;
+  pointer-events: none;
+}
 
 /* ---- mobile dock (bottom) ---- */
 .tabbar {
@@ -199,6 +233,8 @@ p, li { text-wrap: pretty; }
 }
 @media (min-width: 720px) { .tabbar { display: none; } }
 .tabbar a {
+  position: relative;
+  z-index: 1;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -216,10 +252,11 @@ p, li { text-wrap: pretty; }
 }
 .tabbar a svg { width: 22px; height: 22px; }
 .tabbar a[aria-current="page"] {
-  color: var(--lake);
-  background: var(--lake-soft);
-  view-transition-name: tab-pill; /* glides between pages too */
+  color: var(--pill-text);
+  background: var(--pill-bg); /* no-JS fallback; JS swaps in the gliding pill */
 }
+html.js .tabbar a[aria-current="page"] { background: transparent; }
+.tabbar .dock-pill { border-radius: 16px; box-shadow: none; }
 
 main { max-width: 780px; margin: 0 auto; padding: 0 1.25rem 4rem; }
 section { padding: 2.6rem 0 0.5rem; }
@@ -257,7 +294,8 @@ section h2 + .section-intro { margin-top: -0.55rem; }
 }
 .hero h1 { font-size: clamp(2.2rem, 6.2vw, 3.3rem); font-weight: 500; }
 .hero h1 em { font-style: italic; color: var(--stable); }
-.hero .lede { font-size: 1.2rem; max-width: 58ch; color: var(--muted); margin: 1.3rem 0 0; }
+.hero .lede { font-size: 1.2rem; max-width: 58ch; color: var(--muted); margin: 1.3rem 0 0; min-height: 6.8em; /* ≈4 lines: reserves the summary's space on cold loads */ }
+.hero .stamp .mono { min-width: min(46ch, 100%); }
 
 .chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.7rem; min-height: 4.6rem; }
 .chip {
@@ -467,8 +505,8 @@ section h2 + .section-intro { margin-top: -0.55rem; }
 .btn {
   display: inline-block;
   align-self: flex-start;
-  background: var(--stable);
-  color: #FAFBFA;
+  background: var(--btn-bg);
+  color: var(--btn-text);
   text-decoration: none;
   font-weight: 600;
   font-size: 0.95rem;
@@ -538,12 +576,39 @@ footer.site nav a { font-size: 0.95rem; }
 /* generous hit area for a small inline control */
 .made-by::after { content: ""; position: absolute; inset: -10px; }
 
-.skeleton {
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 0.8rem;
-  padding: 1rem 0;
+/* ---- cold-load skeletons: shaped like the content they stand in for ---- */
+.skel-card {
+  display: grid;
+  gap: 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem 1.3rem;
+  box-shadow: var(--shadow);
+  list-style: none;
+  pointer-events: none;
+}
+.skel-bar {
+  display: block;
+  height: 0.8rem;
+  border-radius: 5px;
+  background: var(--surface-2);
   animation: skel-pulse 1.8s var(--ease-in-out) infinite;
+}
+.skel-bar.w30 { width: 30%; }
+.skel-bar.w55 { width: 55%; }
+.skel-bar.w80 { width: 80%; }
+.skel-bar.w95 { width: 95%; }
+.skel-chip {
+  flex: 1 1 180px;
+  min-width: 170px;
+  height: 4.1rem;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  animation: skel-pulse 1.8s var(--ease-in-out) infinite;
+  pointer-events: none;
 }
 @keyframes skel-pulse {
   0%, 100% { opacity: 0.55; }
@@ -558,9 +623,12 @@ html.js .reveal.is-in {
   transition: opacity 450ms var(--ease-smooth-out),
               translate 450ms var(--ease-smooth-out);
 }
-/* gentle cross-fade when live content replaces cached content */
+/* gentle cross-fade when live content genuinely replaces rendered content */
 .region-swap { animation: region-swap 350ms var(--ease-in-out); }
 @keyframes region-swap { from { opacity: 0.35; } }
+/* cold-load entrance: fade only — no translate, so heights never move */
+.region-in { animation: region-in 300ms var(--ease-smooth-out); }
+@keyframes region-in { from { opacity: 0; } }
 
 /* ---- message drawer (footer "Faahim") ---- */
 .msg-overlay {
@@ -572,9 +640,8 @@ html.js .reveal.is-in {
   justify-content: center;
   padding: 0.8rem;
   padding-bottom: calc(0.8rem + env(safe-area-inset-bottom));
-  background: color-mix(in srgb, var(--ink) 38%, transparent);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  /* plain scrim, no backdrop-filter: blur can't animate smoothly and "pops" */
+  background: var(--scrim);
   opacity: 0;
   transition: opacity var(--duration-fast) var(--ease-smooth-out);
 }
@@ -591,18 +658,18 @@ html.js .reveal.is-in {
   border-radius: 18px;
   box-shadow: var(--shadow-lift);
   padding: 1.5rem 1.5rem 1.4rem;
-  transform: translateY(16px) scale(0.98);
+  transform: translateY(8px) scale(0.98);
   opacity: 0;
   transition: transform var(--duration-fast) var(--ease-smooth-out),
               opacity var(--duration-fast) var(--ease-smooth-out);
 }
 .msg-overlay.is-open { opacity: 1; }
 .msg-overlay.is-open .msg-panel { transform: none; opacity: 1; }
-.msg-overlay.is-closing { opacity: 0; transition-duration: var(--duration-quick); }
+.msg-overlay.is-closing { opacity: 0; transition-duration: 180ms; }
 .msg-overlay.is-closing .msg-panel {
-  transform: translateY(8px) scale(0.99);
+  transform: translateY(6px) scale(0.99);
   opacity: 0;
-  transition-duration: var(--duration-quick);
+  transition-duration: 180ms;
 }
 .msg-panel h3 { font-size: 1.4rem; margin-bottom: 0.5rem; }
 .msg-panel .msg-intro { color: var(--muted); font-size: 1rem; margin: 0 0 1.2rem; max-width: 48ch; }
@@ -658,11 +725,11 @@ html.js .reveal.is-in {
 /* ---- calm for those who asked for it ---- */
 @media (prefers-reduced-motion: reduce) {
   .dot { animation: none; }
-  .skeleton { animation: none; }
-  .region-swap { animation: none; }
+  .skel-bar, .skel-chip { animation: none; }
+  .region-swap, .region-in { animation: none; }
   html { scroll-behavior: auto; }
   html.js .reveal { opacity: 1; translate: none; transition: none; }
-  .explore-card, .explore-card .go, .btn, .src,
+  .explore-card, .explore-card .go, .btn, .src, .dock-pill,
   .topnav .links a, .tabbar a, .msg-overlay, .msg-panel { transition: none; }
   .btn:active { scale: none; }
   ::view-transition-group(*),

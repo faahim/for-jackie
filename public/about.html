@@ -7,6 +7,26 @@
 <meta name="description" content="What For Jackie is, who runs it, how facts are verified, and every source used.">
 <link rel="stylesheet" href="/styles.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%85%3C/text%3E%3C/svg%3E">
+<script>
+/* Pre-paint freshness stamp from the cached content document (see app.js). */
+(function () {
+  try {
+    var doc = JSON.parse(localStorage.getItem("fj:content:v1"));
+    var d = doc && doc.meta && new Date(doc.meta.updatedAt);
+    if (!d || isNaN(d)) return;
+    var now = new Date();
+    var time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    var days = Math.round(
+      (new Date(now.getFullYear(), now.getMonth(), now.getDate()) -
+        new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+    window.__fjStamp =
+      days <= 0 ? "updated today at " + time :
+      days === 1 ? "updated yesterday at " + time :
+      days < 7 ? "updated " + d.toLocaleDateString(undefined, { weekday: "long" }) + " at " + time :
+      "updated " + d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  } catch (e) { /* first visit or blocked storage */ }
+})();
+</script>
 </head>
 <body data-page="about">
 
@@ -27,6 +47,7 @@
     <span class="fresh" id="fresh">updated recently</span>
   </div>
 </nav>
+<script>if (window.__fjStamp) document.getElementById("fresh").textContent = window.__fjStamp;</script>
 
 <main>
   <div class="page-head reveal">
@@ -69,6 +90,7 @@
     <p class="eyebrow">Help us stay right</p>
     <h2>Corrections &amp; tips</h2>
     <p class="section-intro">Spotted an error, or an official update we haven't posted yet? The fastest path is an official link (a FOBBV post, an ORC statement, a news article quoting them). This page is maintained by volunteers with an automated watcher on the official channels, but the community's eyes are sharper than any watcher.</p>
+    <button class="btn" type="button" data-open-msg>Send a correction or tip</button>
   </section>
 </main>
 
@@ -79,7 +101,8 @@
       <a rel="noopener" target="_blank" href="https://www.ojairaptorcenter.org/">Ojai Raptor Center</a>
     </nav>
     <p><strong>For Jackie</strong> is an unofficial, volunteer-made community resource — not affiliated with, endorsed by, or speaking for Friends of Big Bear Valley, the Ojai Raptor Center, or any agency involved in Jackie's care. When this page and an official source disagree, trust the official source.</p>
-    <p class="made-line">Made with love by <button class="made-by" id="open-msg" type="button">Faahim</button> and the watchers of the nest. 🦅</p>
+    <p>Have a correction, a resource, an idea for the community — or just something on your heart? Fahim would love to hear it. <button class="made-by" type="button" data-open-msg>Write to Fahim</button></p>
+    <p class="made-line">Made with love by <button class="made-by" type="button" data-open-msg>Faahim</button> and the watchers of the nest. 🦅</p>
   </main>
 </footer>
 

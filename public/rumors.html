@@ -7,6 +7,26 @@
 <meta name="description" content="The claims circulating about Jackie the Big Bear eagle, measured against what official sources have actually said.">
 <link rel="stylesheet" href="/styles.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%85%3C/text%3E%3C/svg%3E">
+<script>
+/* Pre-paint freshness stamp from the cached content document (see app.js). */
+(function () {
+  try {
+    var doc = JSON.parse(localStorage.getItem("fj:content:v1"));
+    var d = doc && doc.meta && new Date(doc.meta.updatedAt);
+    if (!d || isNaN(d)) return;
+    var now = new Date();
+    var time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    var days = Math.round(
+      (new Date(now.getFullYear(), now.getMonth(), now.getDate()) -
+        new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+    window.__fjStamp =
+      days <= 0 ? "updated today at " + time :
+      days === 1 ? "updated yesterday at " + time :
+      days < 7 ? "updated " + d.toLocaleDateString(undefined, { weekday: "long" }) + " at " + time :
+      "updated " + d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  } catch (e) { /* first visit or blocked storage */ }
+})();
+</script>
 </head>
 <body data-page="rumors">
 
@@ -27,6 +47,7 @@
     <span class="fresh" id="fresh">updated recently</span>
   </div>
 </nav>
+<script>if (window.__fjStamp) document.getElementById("fresh").textContent = window.__fjStamp;</script>
 
 <main>
   <div class="page-head reveal">
@@ -36,7 +57,11 @@
   </div>
 
   <section class="reveal">
-    <div id="rumor-list"><p class="skeleton">loading rumor checks…</p></div>
+    <div id="rumor-list">
+      <div class="skel-card" aria-hidden="true"><span class="skel-bar w30"></span><span class="skel-bar w55"></span><span class="skel-bar w95"></span><span class="skel-bar w80"></span></div>
+      <div class="skel-card" aria-hidden="true"><span class="skel-bar w30"></span><span class="skel-bar w55"></span><span class="skel-bar w95"></span><span class="skel-bar w80"></span></div>
+      <div class="skel-card" aria-hidden="true"><span class="skel-bar w30"></span><span class="skel-bar w55"></span><span class="skel-bar w95"></span><span class="skel-bar w80"></span></div>
+    </div>
   </section>
 
   <section class="reveal">
@@ -54,7 +79,8 @@
       <a rel="noopener" target="_blank" href="https://www.ojairaptorcenter.org/">Ojai Raptor Center</a>
     </nav>
     <p><strong>For Jackie</strong> is an unofficial, volunteer-made community resource — not affiliated with, endorsed by, or speaking for Friends of Big Bear Valley, the Ojai Raptor Center, or any agency involved in Jackie's care. When this page and an official source disagree, trust the official source.</p>
-    <p class="made-line">Made with love by <button class="made-by" id="open-msg" type="button">Faahim</button> and the watchers of the nest. 🦅</p>
+    <p>Have a correction, a resource, an idea for the community — or just something on your heart? Fahim would love to hear it. <button class="made-by" type="button" data-open-msg>Write to Fahim</button></p>
+    <p class="made-line">Made with love by <button class="made-by" type="button" data-open-msg>Faahim</button> and the watchers of the nest. 🦅</p>
   </main>
 </footer>
 
