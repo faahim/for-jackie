@@ -84,9 +84,18 @@ async function handleApi(request, url, env, ctx) {
     return new Response(seed.body, { status: seed.status, headers: JSON_HEADERS });
   }
 
+  if (route === "POST /api/messages") {
+    return await handleIncomingMessage(request, env);
+  }
+
   // Everything below requires the publish token.
   if (!(await authorized(request, env))) {
     return json({ ok: false, error: "unauthorized" }, 401);
+  }
+
+  if (route === "GET /api/messages") {
+    const messages = await listWithValues(env, "msg:", 50);
+    return json({ ok: true, messages: messages.reverse() }); // newest first
   }
 
   if (route === "POST /api/publish") {
@@ -161,6 +170,80 @@ async function handleApi(request, url, env, ctx) {
   }
 
   return json({ ok: false, error: "not found" }, 404);
+}
+
+// ---------- visitor messages ----------
+
+/**
+ * POST /api/messages — unauthenticated contact form from the site footer.
+ * Validates lengths, drops honeypot hits silently, best-effort rate limit of
+ * 5 messages/hour per IP (KV counter), stores as msg:<iso>-<hash8>, and
+ * forwards to Telegram when the secrets exist. Storage always wins: Telegram
+ * failures are logged and swallowed.
+ */
+async function handleIncomingMessage(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, error: "invalid json" }, 400);
+  }
+  if (!body || typeof body !== "object") {
+    return json({ ok: false, error: "invalid body" }, 400);
+  }
+
+  // Honeypot: bots fill everything. Pretend success, store nothing.
+  if (body.website) {
+    return json({ ok: true });
+  }
+
+  const message = typeof body.message === "string" ? body.message.trim() : "";
+  if (!message) return json({ ok: false, error: "message is required" }, 400);
+  if (message.length > 2000) return json({ ok: false, error: "message too long (2000 characters max)" }, 400);
+  const name = typeof body.name === "string" ? body.name.trim().slice(0, 120) : "";
+  const contact = typeof body.contact === "string" ? body.contact.trim().slice(0, 200) : "";
+  const fromPage = typeof body.page === "string" ? body.page.trim().slice(0, 40) : "";
+
+  // Best-effort per-IP rate limit: 5/hour (KV counter, non-atomic is fine here).
+  const ip = request.headers.get("cf-connecting-ip") || "unknown";
+  const rateKey = `msgrate:${await shortHash(ip)}:${new Date().toISOString().slice(0, 13)}`;
+  const count = parseInt((await env.KV.get(rateKey)) || "0", 10);
+  if (count >= 5) {
+    return json({ ok: false, error: "too many messages — please try again in an hour" }, 429);
+  }
+  await env.KV.put(rateKey, String(count + 1), { expirationTtl: 60 * 60 });
+
+  const receivedAt = new Date().toISOString();
+  const hash = (await shortHash(receivedAt + ip + message)).slice(0, 8);
+  const key = `msg:${receivedAt}-${hash}`;
+  const record = {
+    name: name || null,
+    contact: contact || null,
+    message,
+    page: fromPage || null,
+    receivedAt,
+  };
+  await env.KV.put(key, JSON.stringify(record));
+  console.log(JSON.stringify({ level: "info", event: "message", key, bytes: message.length }));
+
+  if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
+    try {
+      const text =
+        `💌 For Jackie — new message\n` +
+        `From: ${name || "anonymous"}${contact ? ` (${contact})` : ""}\n` +
+        `Page: ${fromPage || "unknown"}\n\n${message}`;
+      const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text }),
+      });
+      if (!res.ok) throw new Error(`telegram HTTP ${res.status}`);
+    } catch (err) {
+      console.log(JSON.stringify({ level: "warn", event: "telegram-forward-failed", key, message: String(err) }));
+    }
+  }
+
+  return json({ ok: true });
 }
 
 // ---------- watcher ----------
