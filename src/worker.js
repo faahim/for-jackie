@@ -35,6 +35,11 @@ const WATCHED_FEEDS = [
 const WATCHED_PAGES = [
   { id: "fobbv-site", label: "friendsofbigbearvalley.org", url: "https://friendsofbigbearvalley.org/" },
   { id: "orc-site", label: "ojairaptorcenter.org", url: "https://www.ojairaptorcenter.org/" },
+  {
+    id: "fobbv-live-doc",
+    label: "FOBBV Live Recap doc (official, real-time)",
+    url: "https://docs.google.com/document/d/1gx7VP85Gwp1jhHRilStcZMrnUPszHQ0-w1czkjnf9bc/export?format=txt",
+  },
 ];
 
 const FETCH_UA =
@@ -122,7 +127,14 @@ async function handleApi(request, url, env, ctx) {
     if (!body || !body.title) {
       return json({ ok: false, error: "candidate needs at least a title" }, 400);
     }
-    const key = `cand:${new Date().toISOString()}-${await shortHash(body.title + (body.url || ""))}`;
+    // Server-side dedupe: watchers can re-submit what they see; repeats are dropped.
+    const hash = await shortHash((body.dedupeKey || body.title) + (body.url || ""));
+    const seenKey = `seen:ingest:${hash}`;
+    if (await env.KV.get(seenKey)) {
+      return json({ ok: true, duplicate: true });
+    }
+    await env.KV.put(seenKey, "1", { expirationTtl: 60 * 60 * 24 * 90 });
+    const key = `cand:${new Date().toISOString()}-${hash}`;
     await env.KV.put(
       key,
       JSON.stringify({
@@ -164,7 +176,8 @@ async function pollSources(env) {
       const items = feed.kind === "atom" ? parseAtom(xml) : parseRss(xml);
       let fresh = 0;
       for (const item of items.slice(0, 25)) {
-        const hash = await shortHash(item.link || item.title);
+        // Dedupe by title: feed links (Bing especially) carry rotating tracking params.
+        const hash = await shortHash(item.title || item.link);
         const seenKey = `seen:${feed.id}:${hash}`;
         if (await env.KV.get(seenKey)) continue;
         await env.KV.put(seenKey, "1", { expirationTtl: 60 * 60 * 24 * 90 });
