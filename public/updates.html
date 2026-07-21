@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Verified Updates — For Jackie</title>
 <meta name="description" content="Every verified update on Jackie the Big Bear bald eagle's rescue and recovery, in order, with sources.">
-<link rel="stylesheet" href="/styles.css?v=3">
+<link rel="stylesheet" href="/styles.css?v=4">
 <link rel="canonical" href="https://forjackie.org/updates">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
@@ -26,6 +26,7 @@ document.documentElement.classList.add("js");
 (function () {
   try {
     var doc = JSON.parse(localStorage.getItem("fj:content:v1"));
+    if (doc && doc.banner && doc.banner.text) window.__fjBanner = String(doc.banner.text);
     var d = doc && doc.meta && new Date(doc.meta.updatedAt);
     if (!d || isNaN(d)) return;
     var now = new Date();
@@ -46,6 +47,7 @@ document.documentElement.classList.add("js");
 
 <div class="strip"><span class="strip-full">Community-run · <strong>Not affiliated</strong> with FOBBV or the Ojai Raptor Center · Every fact links to its source</span><span class="strip-mini">Community-run · <strong>Not affiliated</strong> · Sources linked</span></div>
 <div class="alert-banner" id="alert-banner" role="status"></div>
+<script>(function () { var el = document.getElementById("alert-banner"); if (window.__fjBanner && el) { el.textContent = window.__fjBanner; el.classList.add("visible"); } })();</script>
 
 <nav class="topnav">
   <div class="inner">
@@ -121,6 +123,6 @@ document.documentElement.classList.add("js");
   </button>
 </nav>
 
-<script src="/app.js" defer></script>
+<script src="/app.js?v=4" defer></script>
 </body>
 </html>

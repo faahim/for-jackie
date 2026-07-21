@@ -102,11 +102,12 @@
 
     renderStamps(content);
 
-    // emergency banner (all pages)
+    // emergency banner (all pages) — the inline head script already applied
+    // it pre-paint from cache; only touch the DOM when something changed.
     el = document.getElementById("alert-banner");
     if (el) {
       if (content.banner && content.banner.text) {
-        el.textContent = content.banner.text;
+        if (el.textContent !== content.banner.text) el.textContent = content.banner.text;
         el.classList.add("visible");
       } else {
         el.classList.remove("visible");
@@ -199,9 +200,9 @@
               .map(function (c) {
                 return (
                   '<figure class="community-card"><blockquote>' + esc(c.quote) + "</blockquote>" +
-                  "<figcaption>" + esc(c.author || "A community member") +
+                  '<figcaption><span class="who">' + esc(c.author || "A community member") + "</span>" +
                   (c.url
-                    ? ' <a class="src" rel="noopener" target="_blank" href="' + esc(c.url) + '">' +
+                    ? '<a class="src" rel="noopener" target="_blank" href="' + esc(c.url) + '">' +
                       esc(c.sourceLabel || "source") + "</a>"
                     : "") +
                   "</figcaption></figure>"

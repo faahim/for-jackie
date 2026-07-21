@@ -75,8 +75,11 @@
   --btn-text: #FAFBFA;
   --pill-bg: var(--lake);
   --pill-text: #FAFBFA;
-  --strip-bg: #1D2B25;      /* deep pine ink, mist text */
-  --strip-text: #F1F4F2;
+  --strip-bg: #E3E9E5;      /* pine-tinted mist — part of the page, not a band */
+  --strip-text: #43514A;
+  --strip-strong: #7A5A14;  /* deep gold: AA at strip's small size on light */
+  --banner-bg: #C89A2B;     /* major banner: gold ground, pine ink text */
+  --banner-text: #1D2B25;
   --scrim: rgba(29, 43, 37, 0.45);
   /* Palatino first: Mac/Windows keep their native face and never download
      Lora; Android/Linux (no Palatino) fall through to self-hosted Lora. */
@@ -116,6 +119,9 @@
     --pill-text: #0F1613;   /* --pill-bg resolves to the light dark-theme lake */
     --strip-bg: #1A241E;    /* slightly-elevated night pine, muted text */
     --strip-text: #93A39B;
+    --strip-strong: #D9AE4B;
+    --banner-bg: #A8821F;   /* deeper gold so the alert doesn't sear at night */
+    --banner-text: #14100A;
     --scrim: rgba(0, 0, 0, 0.55);
   }
 }
@@ -172,7 +178,7 @@ p, li { text-wrap: pretty; }
   text-transform: uppercase;
   font-family: var(--mono);
 }
-.strip strong { color: var(--gold-graphic); font-weight: 600; }
+.strip strong { color: var(--strip-strong); font-weight: 600; }
 .strip .strip-mini { display: none; }
 @media (max-width: 719px) {
   /* one compact line on phones — the disclaimer stays, the bulk goes */
@@ -184,8 +190,8 @@ p, li { text-wrap: pretty; }
 /* ---- emergency banner (dynamic) ---- */
 .alert-banner {
   display: none;
-  background: var(--gold-graphic);
-  color: #1D2B25;
+  background: var(--banner-bg);
+  color: var(--banner-text);
   padding: 0.7rem 1.25rem;
   text-align: center;
   font-weight: 600;
@@ -886,6 +892,8 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
 @media (min-width: 640px) { .community-grid { grid-template-columns: 1fr 1fr; } }
 .community-card {
   margin: 0;
+  display: flex;
+  flex-direction: column; /* quote grows, footer pins to the bottom */
   background: var(--surface);
   border: 1px solid var(--line);
   border-left: 3px solid var(--gold-graphic);
@@ -894,6 +902,7 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
   box-shadow: var(--shadow);
 }
 .community-card blockquote {
+  flex: 1;
   margin: 0 0 0.7rem;
   font-family: var(--display);
   font-style: italic;
@@ -903,10 +912,11 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
 .community-card blockquote::before { content: "\201C"; color: var(--muted); }
 .community-card blockquote::after { content: "\201D"; color: var(--muted); }
 .community-card figcaption {
+  margin-top: auto; /* consistent bottom alignment across card lengths */
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem;
+  flex-direction: column; /* author + source pill each on their own row */
+  align-items: flex-start;
+  gap: 0.35rem;
   font-size: 0.95rem;
   color: var(--muted);
 }
