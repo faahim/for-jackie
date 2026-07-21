@@ -1,0 +1,157 @@
+{
+  "meta": {
+    "updatedAt": "2026-07-22T00:00:00Z",
+    "lastVerified": "2026-07-22",
+    "version": 1
+  },
+  "banner": null,
+  "headline": {
+    "title": "Jackie is alive and stable, in expert hands.",
+    "lede": "Big Bear's beloved bald eagle was rescued on the night of Friday, July 17 after an altercation with two younger eagles left her grounded by the lake. She is now at the Ojai Raptor Center — alert, perching, and eating with assistance while veterinarians await her full diagnostic results. Shadow is home, watching over the territory and still feeding Sandy and Luna."
+  },
+  "statuses": [
+    { "who": "Jackie", "state": "Stable · in care at Ojai Raptor Center", "tone": "stable" },
+    { "who": "Shadow", "state": "At the nest, guarding & providing", "tone": "lake" },
+    { "who": "Sandy & Luna", "state": "Fledged in June, being fed by Shadow", "tone": "lake" }
+  ],
+  "updates": [
+    {
+      "id": "2026-07-21-donations",
+      "date": "2026-07-21",
+      "title": "Community response tops 8,400 donations",
+      "body": "The Ojai Raptor Center has received tens of thousands of dollars from Jackie's worldwide family — more than 8,400 individual donations to their Bald Eagle Rehabilitation Campaign as of Monday. The center reminds everyone that updates will come through their email list and social media, and asks that the hotline stay clear for animal emergencies.",
+      "tone": "good",
+      "major": false,
+      "sources": [
+        { "label": "KTLA · Jul 21", "url": "https://ktla.com/news/local-news/wildlife-center-caring-for-jackie-the-bald-eagle-receives-tens-of-thousands-of-dollars-in-donations/" }
+      ]
+    },
+    {
+      "id": "2026-07-20-condition",
+      "date": "2026-07-20",
+      "title": "Underweight but alert, perching, and eating",
+      "body": "The Ojai Raptor Center reports Jackie is alert, perching, and eating with assistance. Her physical exam found no fractures and no major wounds — she arrived lethargic and underweight, which is why full diagnostic testing matters. Results are expected within days.",
+      "tone": "good",
+      "major": false,
+      "sources": [
+        { "label": "VVNG · Jul 20", "url": "https://www.vvng.com/jackie-underweight-but-alert-as-friends-of-big-bear-valley-shares-new-details-of-big-bear-bald-eagles-rescue/" },
+        { "label": "NBC Palm Springs · Jul 20", "url": "https://www.nbcpalmsprings.com/2026/07/20/big-bear-bald-eagle-jackie-moved-to-ojai-raptor-center-for-specialized-care" }
+      ]
+    },
+    {
+      "id": "2026-07-20-confirmed",
+      "date": "2026-07-20",
+      "title": "It's officially Jackie — and she's in specialist hands",
+      "body": "What early reports could only call an eagle 'believed to be Jackie' has been confirmed by Friends of Big Bear Valley: the rescued eagle is Jackie. She has been transferred to the Ojai Raptor Center, a facility specializing in birds of prey, for advanced care and a comprehensive medical evaluation.",
+      "tone": "info",
+      "major": true,
+      "sources": [
+        { "label": "VVNG · Jul 20", "url": "https://www.vvng.com/rescued-big-bear-bald-eagle-confirmed-to-be-jackie-receiving-specialized-care-at-ojai-raptor-center/" }
+      ]
+    },
+    {
+      "id": "2026-07-19-shadow",
+      "date": "2026-07-19",
+      "title": "Shadow holds the territory — six fish delivered",
+      "body": "While Jackie recovers, Shadow is doing what he has always done: guarding the territory and providing. Friends of Big Bear Valley counted six fish deliveries for Sandy and Luna, who fledged in late June and are flying well.",
+      "tone": "good",
+      "major": false,
+      "sources": [
+        { "label": "GMA · Jul 20", "url": "https://www.goodmorningamerica.com/living/story/big-bear-eagle-presumed-jackie-stable-after-rescued-134925837" },
+        { "label": "NBC LA · Jul 19", "url": "https://www.nbclosangeles.com/news/local/big-bear-eagle-rescue/3919695/" }
+      ]
+    },
+    {
+      "id": "2026-07-18-rescue",
+      "date": "2026-07-18",
+      "title": "Rescued in the small hours by 'Jackie's angels'",
+      "body": "After being found grounded on the shoreline at Dana Point Park on Friday evening — apparently after defending her territory against two subadult eagles — Jackie was watched over for hours by residents, visitors, and the Fawnskin fire crew under Captain Dennis Jones. The San Dimas Raptor Rescue Team of the LA County Parks Department completed the rescue around 2:00 a.m. Saturday.",
+      "tone": "info",
+      "major": true,
+      "sources": [
+        { "label": "NBC LA · Jul 19", "url": "https://www.nbclosangeles.com/news/local/big-bear-eagle-rescue/3919695/" },
+        { "label": "VVNG · Jul 20", "url": "https://www.vvng.com/jackie-underweight-but-alert-as-friends-of-big-bear-valley-shares-new-details-of-big-bear-bald-eagles-rescue/" }
+      ]
+    }
+  ],
+  "unknowns": [
+    "Her full diagnostic results — bloodwork and lab tests were still pending at the last official update, expected within days.",
+    "Why she was underweight — whether the fight caused her condition, or her condition preceded the fight.",
+    "How long rehabilitation will take, and when (or whether) a release date might be set. No official timeline exists yet.",
+    "Whether the two subadult eagles will linger in the territory."
+  ],
+  "rumors": [
+    {
+      "claim": "Jackie has died.",
+      "verdict": "false",
+      "verdictLabel": "No evidence",
+      "body": "As of the most recent official updates (July 20–21), Jackie is stable, alert, perching, and eating. Any claim otherwise did not come from FOBBV or the Ojai Raptor Center.",
+      "sources": [
+        { "label": "VVNG · Jul 20", "url": "https://www.vvng.com/jackie-underweight-but-alert-as-friends-of-big-bear-valley-shares-new-details-of-big-bear-bald-eagles-rescue/" }
+      ]
+    },
+    {
+      "claim": "She was badly wounded in the attack.",
+      "verdict": "false",
+      "verdictLabel": "Not what exams found",
+      "body": "Her physical exam found no fractures and no major wounds. The concern is that she was underweight and lethargic — which is why diagnostics matter more than the fight itself.",
+      "sources": [
+        { "label": "PopSci · Jul 20", "url": "https://www.popsci.com/environment/bald-eagle-jackie-injured-rehab/" }
+      ]
+    },
+    {
+      "claim": "Sandy and Luna have been abandoned.",
+      "verdict": "false",
+      "verdictLabel": "False",
+      "body": "Sandy and Luna fledged successfully in late June and are flying. Shadow is actively hunting for them and guarding the territory — six fish deliveries were observed in a single stretch.",
+      "sources": [
+        { "label": "GMA · Jul 20", "url": "https://www.goodmorningamerica.com/living/story/big-bear-eagle-presumed-jackie-stable-after-rescued-134925837" }
+      ]
+    },
+    {
+      "claim": "It might not even be Jackie.",
+      "verdict": "true",
+      "verdictLabel": "Settled",
+      "body": "This was a fair question in the first days — early reports said 'believed to be Jackie.' FOBBV has since confirmed her identity.",
+      "sources": [
+        { "label": "VVNG · Jul 20", "url": "https://www.vvng.com/rescued-big-bear-bald-eagle-confirmed-to-be-jackie-receiving-specialized-care-at-ojai-raptor-center/" }
+      ]
+    },
+    {
+      "claim": "She'll be released on [any specific date].",
+      "verdict": "open",
+      "verdictLabel": "Unknown",
+      "body": "No release timeline has been announced by anyone official. Rehabilitation decisions will follow her diagnostics and recovery — expect this to be measured in weeks, not days, and let the professionals set the pace.",
+      "sources": []
+    },
+    {
+      "claim": "Calling the raptor center shows support.",
+      "verdict": "false",
+      "verdictLabel": "Please don't",
+      "body": "The Ojai Raptor Center has specifically asked people not to call or text their hotline — those lines are for animals in urgent need. Updates will come through their email list and social media.",
+      "sources": [
+        { "label": "NBC Palm Springs · Jul 20", "url": "https://www.nbcpalmsprings.com/2026/07/20/big-bear-bald-eagle-jackie-moved-to-ojai-raptor-center-for-specialized-care" }
+      ]
+    }
+  ],
+  "timeline": [
+    { "chapter": "Part I · The season", "events": [
+      { "date": "JAN 23 & 26", "title": "The first clutch", "body": "Jackie lays two eggs as the new season opens.", "phase": "season" },
+      { "date": "LATE JAN", "title": "Ravens strike", "body": "Both eggs are breached by a pair of ravens — a heartbreak this nest has known before.", "phase": "crisis" },
+      { "date": "FEB 24 & 27", "title": "A second chance", "body": "Jackie lays a second clutch of two eggs. The watch begins again.", "phase": "hope" },
+      { "date": "APR 4 & 5", "title": "Two hatches", "body": "Chick one arrives at 9:33 p.m. on April 4; chick two follows the next morning at 8:30 a.m.", "phase": "hope" },
+      { "date": "MAY 1", "title": "Sandy & Luna", "body": "Bear Valley third-graders choose the winning names from some 63,000 entries.", "phase": "season" },
+      { "date": "JUN 28 & 29", "title": "Fledge days", "body": "Sandy leaves the nest first (an 'accidental flight'); Luna follows the next morning, landing in a tree beside Shadow.", "phase": "hope" }
+    ]},
+    { "chapter": "Part II · The rescue", "events": [
+      { "date": "FRI · JUL 17", "title": "Jackie is found grounded", "body": "After an altercation with two subadult eagles — apparently over territory and food — Jackie is found on the shoreline at Dana Point Park, on the lake's northwest side, unable to fly. Residents and visitors stay beside her and go for help.", "phase": "crisis" },
+      { "date": "FRI NIGHT", "title": "The fire crew stands watch", "body": "Captain Dennis Jones and the Fawnskin fire crew guard her for hours, keeping wildlife and onlookers away. FOBBV would later call everyone involved 'Jackie's angels.'", "phase": "season" },
+      { "date": "SAT · ~2:00 AM", "title": "Rescue complete", "body": "The San Dimas Raptor Rescue Team of the LA County Parks Department arrives in the small hours and safely secures her.", "phase": "season" },
+      { "date": "JUL 19–20", "title": "To Ojai, and confirmation", "body": "Jackie is transferred to the Ojai Raptor Center for specialized care. Her identity is confirmed: it is Jackie.", "phase": "season" }
+    ]},
+    { "chapter": "Part III · In recovery", "events": [
+      { "date": "JUL 20–21", "title": "Stable, alert, eating", "body": "No fractures, no major wounds. Underweight but perching and eating with assistance. Full diagnostic results expected within days.", "phase": "hope" },
+      { "date": "NOW", "title": "The waiting", "body": "Shadow keeps the territory and feeds Sandy and Luna. The rest of us wait together — and let the experts work.", "phase": "season" }
+    ]}
+  ]
+}
