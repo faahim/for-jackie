@@ -198,6 +198,14 @@ p, li { text-wrap: pretty; }
   font-size: 0.95rem;
 }
 .alert-banner.visible { display: block; }
+@media (max-width: 719px) {
+  .alert-banner {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    padding: 0.45rem 1rem;
+    font-weight: 500;
+  }
+}
 
 /* ---- desktop nav: wordmark left, pill dock centered, freshness right ---- */
 .topnav {
