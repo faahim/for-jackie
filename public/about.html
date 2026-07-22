@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>About &amp; Sources — For Jackie</title>
 <meta name="description" content="What For Jackie is, who runs it, how facts are verified, and every source used.">
-<link rel="stylesheet" href="/styles.css?v=5">
+<link rel="stylesheet" href="/styles.css?v=6">
 <link rel="canonical" href="https://forjackie.org/about">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
@@ -27,18 +27,36 @@ document.documentElement.classList.add("js");
   try {
     var doc = JSON.parse(localStorage.getItem("fj:content:v1"));
     if (doc && doc.banner && doc.banner.text) window.__fjBanner = String(doc.banner.text);
-    var d = doc && doc.meta && new Date(doc.meta.updatedAt);
-    if (!d || isNaN(d)) return;
-    var now = new Date();
-    var time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-    var days = Math.round(
-      (new Date(now.getFullYear(), now.getMonth(), now.getDate()) -
-        new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
-    window.__fjStamp =
-      days <= 0 ? "updated today at " + time :
-      days === 1 ? "updated yesterday at " + time :
-      days < 7 ? "updated " + d.toLocaleDateString(undefined, { weekday: "long" }) + " at " + time :
-      "updated " + d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    var meta = doc && doc.meta;
+    if (!meta) return;
+    var updated = null;
+    var d = new Date(meta.updatedAt);
+    if (!isNaN(d)) {
+      var now = new Date();
+      var time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      var days = Math.round(
+        (new Date(now.getFullYear(), now.getMonth(), now.getDate()) -
+          new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+      updated =
+        days <= 0 ? "updated today at " + time :
+        days === 1 ? "updated yesterday at " + time :
+        days < 7 ? "updated " + d.toLocaleDateString(undefined, { weekday: "long" }) + " at " + time :
+        "updated " + d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    }
+    var c = new Date(meta.checkedAt);
+    if (!isNaN(c)) {
+      var age = Math.max(0, Date.now() - c.getTime());
+      var mins = Math.floor(age / 60000);
+      var stale = age > 20 * 60000; // old cache: do not claim vigilance pre-fetch
+      window.__fjFresh = stale ? "checking…" :
+        "checked " + (age < 90000 ? "just now" : mins < 60 ? mins + "m ago" : Math.floor(mins / 60) + "h ago");
+      window.__fjHero = (stale ? "Checking now" :
+        "Checked " + (age < 90000 ? "just now" : mins < 60 ? mins + " min ago" : Math.floor(mins / 60) + " h ago")) +
+        (updated ? " · " + updated.replace(/^updated/, "latest update") : "");
+    } else if (updated) {
+      window.__fjFresh = updated;
+      window.__fjHero = "Verified facts · " + updated;
+    }
   } catch (e) { /* first visit or blocked storage */ }
 })();
 </script>
@@ -63,7 +81,7 @@ document.documentElement.classList.add("js");
     <span class="fresh" id="fresh">updated recently</span>
   </div>
 </nav>
-<script>if (window.__fjStamp) document.getElementById("fresh").textContent = window.__fjStamp;</script>
+<script>if (window.__fjFresh) document.getElementById("fresh").textContent = window.__fjFresh;</script>
 
 <main>
   <div class="page-head reveal">
@@ -151,6 +169,6 @@ document.documentElement.classList.add("js");
   </button>
 </nav>
 
-<script src="/app.js?v=4" defer></script>
+<script src="/app.js?v=6" defer></script>
 </body>
 </html>

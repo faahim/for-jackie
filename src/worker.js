@@ -131,8 +131,15 @@ async function handleApi(request, url, env, ctx) {
   if (route === "GET /api/content") {
     // Privacy-respecting visit counter: one daily number, nothing else.
     ctx.waitUntil(bumpDailyHits(env));
-    const stored = await env.KV.get("content", "json");
-    if (stored) return json(stored);
+    const [stored, lastCheck] = await Promise.all([
+      env.KV.get("content", "json"),
+      env.KV.get("lastcheck"),
+    ]);
+    if (stored) {
+      // Merged at read time only — never persisted into the content doc.
+      if (lastCheck && stored.meta) stored.meta.checkedAt = lastCheck;
+      return json(stored);
+    }
     // Fall back to the seed shipped with the static assets.
     const seed = await env.ASSETS.fetch(new URL("/content.json", url.origin));
     return new Response(seed.body, { status: seed.status, headers: JSON_HEADERS });
@@ -392,6 +399,9 @@ async function handleIncomingMessage(request, env) {
 // ---------- watcher ----------
 
 async function pollSources(env) {
+  // Record the check itself first: even a run that finds nothing proves the
+  // watchers are awake. Surfaces as meta.checkedAt on GET /api/content.
+  await env.KV.put("lastcheck", new Date().toISOString());
   const summary = { newCandidates: 0, sources: {} };
 
   for (const feed of WATCHED_FEEDS) {

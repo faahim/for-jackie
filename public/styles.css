@@ -386,7 +386,8 @@ section h2 + .section-intro { margin-top: -0.55rem; }
 .hero h1 { font-size: clamp(2.2rem, 6.2vw, 3.3rem); font-weight: 500; }
 .hero h1 em { font-style: italic; color: var(--stable); }
 .hero .lede { font-size: 1.2rem; max-width: 58ch; color: var(--muted); margin: 1.3rem 0 0; min-height: 6.8em; /* ≈4 lines: reserves the summary's space on cold loads */ }
-.hero .stamp .mono { min-width: min(46ch, 100%); }
+/* longest: "Checked 59 min ago · latest update Wednesday at 12:41 PM" */
+.hero .stamp .mono { min-width: min(56ch, 100%); }
 
 .chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.7rem; min-height: 4.6rem; }
 .chip {

@@ -88,14 +88,50 @@
     if (el && text && el.textContent !== text) el.textContent = text;
   }
 
-  function renderStamps(content) {
-    var stamp = content.meta && content.meta.updatedAt ? humanStamp(content.meta.updatedAt) : null;
-    setText(
-      document.getElementById("fresh"),
-      stamp || (content.meta && content.meta.lastVerified ? "verified " + content.meta.lastVerified : null)
-    );
-    if (stamp) setText(document.getElementById("stamp"), "Verified facts · " + stamp);
+  // Relative wording for meta.checkedAt (watcher vigilance).
+  function relParts(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return null;
+    var age = Math.max(0, Date.now() - d.getTime());
+    var mins = Math.floor(age / 60000);
+    return {
+      stale: age > 20 * 60000,
+      compact: age < 90000 ? "just now" : mins < 60 ? mins + "m ago" : Math.floor(mins / 60) + "h ago",
+      full: age < 90000 ? "just now" : mins < 60 ? mins + " min ago" : Math.floor(mins / 60) + " h ago",
+    };
   }
+
+  var stampMeta = null;
+  var stampConfirmed = false; // true once a live fetch has vouched for checkedAt
+
+  function applyStamps() {
+    if (!stampMeta) return;
+    var updated = stampMeta.updatedAt ? humanStamp(stampMeta.updatedAt) : null;
+    var rel = stampMeta.checkedAt ? relParts(stampMeta.checkedAt) : null;
+    var navText, heroText;
+    if (rel) {
+      // A stale cached claim isn't vigilance — say "checking…" until a live
+      // fetch confirms; formats mirror the inline head script exactly.
+      var uncertain = rel.stale && !stampConfirmed;
+      navText = uncertain ? "checking…" : "checked " + rel.compact;
+      heroText = (uncertain ? "Checking now" : "Checked " + rel.full) +
+        (updated ? " · " + updated.replace(/^updated/, "latest update") : "");
+    } else {
+      navText = updated || (stampMeta.lastVerified ? "verified " + stampMeta.lastVerified : null);
+      heroText = updated ? "Verified facts · " + updated : null;
+    }
+    setText(document.getElementById("fresh"), navText);
+    setText(document.getElementById("stamp"), heroText);
+  }
+
+  function renderStamps(content) {
+    stampMeta = content.meta || null;
+    applyStamps();
+  }
+
+  // Keep "checked X ago" honest in long-open tabs: a guarded text swap every
+  // minute — no DOM rebuild, no animation. visibilitychange refetches too.
+  setInterval(applyStamps, 60000);
 
   function render(content, mode) {
     var el;
@@ -276,6 +312,7 @@
       })
       .then(function (content) {
         if (!content || !content.meta) return;
+        stampConfirmed = true; // live response: checkedAt is current
         writeCache(content);
         if (content.meta.updatedAt !== lastRendered) {
           // Cold load (nothing rendered yet) fades in; a genuine content
