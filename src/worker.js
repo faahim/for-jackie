@@ -45,6 +45,14 @@ const WATCHED_FEEDS = [
     url: "https://www.bing.com/news/search?q=%22Jackie%22+eagle+%22Big+Bear%22&format=rss",
   },
   {
+    // Recovery-phase coverage (CBS LA, Fox 11, KESQ, LAT syndications) often
+    // omits "Big Bear" — this catches anything mentioning her care facility.
+    id: "bing-news-orc",
+    kind: "rss",
+    label: "Bing News (ORC)",
+    url: "https://www.bing.com/news/search?q=%22Ojai+Raptor+Center%22&format=rss",
+  },
+  {
     id: "yt-fobbv",
     kind: "atom",
     label: "FOBBV CAM (YouTube)",
