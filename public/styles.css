@@ -1010,6 +1010,32 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
 /* ---- home: From the Wall of Love ---- */
 #home-wall .wall { min-height: 0; }
 
+/* ---- update permalink pages (/updates/<id>) ---- */
+.update h3 a { color: inherit; text-decoration: none; }
+.update h3 a:hover, .update h3 a:focus-visible { color: var(--lake); text-decoration: underline; text-underline-offset: 3px; }
+.backlink {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  margin-bottom: 1.6rem;
+}
+.backlink:hover, .backlink:focus-visible { color: var(--gold); }
+.post .page-head h1 { max-width: 26ch; text-wrap: balance; }
+.post-when { display: flex; align-items: center; gap: 0.55rem; }
+.post-when .tone-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lake); flex: none; }
+.post.good .post-when .tone-dot { background: var(--stable); }
+.post.concern .post-when .tone-dot { background: var(--gold-graphic); }
+.post-body { max-width: 62ch; margin-top: 1.5rem; }
+.post-body p { font-size: 1.13rem; line-height: 1.85; margin: 0 0 1.1rem; }
+.post-body .srcs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.3rem; }
+@media (max-width: 479px) {
+  .post-body p { font-size: 1.04rem; line-height: 1.8; }
+}
+
 /* ---- mobile typography tuning (<480px): calmer measure, more air ---- */
 @media (max-width: 479px) {
   body { line-height: 1.75; }

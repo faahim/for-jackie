@@ -14,7 +14,16 @@
  *   wall:<iso>-<hash8>       — APPROVED wall notes only {name, message, approvedAt}
  */
 
-import { PAGE_FOR_PATH, transformHtml, llmsTxt, llmsFullTxt, sitemapXml } from "./ssr.js";
+import {
+  PAGE_FOR_PATH,
+  transformHtml,
+  llmsTxt,
+  llmsFullTxt,
+  sitemapXml,
+  findUpdate,
+  renderUpdatePage,
+  renderUpdate404,
+} from "./ssr.js";
 
 // IndexNow (instant indexing for Bing & partners). The key is public by
 // design — it only proves we control this host. Served at /<key>.txt.
@@ -245,7 +254,7 @@ async function handleApi(request, url, env, ctx) {
       `audit:${now}`,
       JSON.stringify({ actor: body.actor || "unknown", note: body.note || "", bytes: doc.length })
     );
-    ctx.waitUntil(pingIndexNow());
+    ctx.waitUntil(pingIndexNow(content));
     return json({ ok: true, updatedAt: now });
   }
 
@@ -350,6 +359,19 @@ async function handlePage(request, url, env) {
     });
   }
 
+  // Per-update permalink pages: fully synthesized at the edge, no static asset.
+  const updateMatch = url.pathname.match(/^\/updates\/([A-Za-z0-9-]+)\/?$/);
+  if (updateMatch && request.method === "GET") {
+    if (url.pathname.endsWith("/")) {
+      return Response.redirect(url.origin + "/updates/" + updateMatch[1], 301);
+    }
+    const c = await contentDoc(env, url.origin);
+    const found = c && findUpdate(c, updateMatch[1]);
+    const html = { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=300" };
+    if (!found) return new Response(renderUpdate404(), { status: 404, headers: html });
+    return new Response(renderUpdatePage(found, c), { headers: html });
+  }
+
   const page = PAGE_FOR_PATH[url.pathname];
   if (page && request.method === "GET") {
     try {
@@ -379,8 +401,12 @@ async function handlePage(request, url, env) {
  * Tell IndexNow-participating engines (Bing, and via them much of the AI
  * search ecosystem) that the site changed. Fire-and-forget from publishes.
  */
-async function pingIndexNow() {
+async function pingIndexNow(content) {
   try {
+    const paths = ["/", "/updates", "/rumors", "/timeline", "/wall", "/help", "/about"];
+    for (const u of (content && content.updates) || []) {
+      if (u.id) paths.push("/updates/" + u.id);
+    }
     const res = await fetch("https://api.indexnow.org/indexnow", {
       method: "POST",
       headers: { "content-type": "application/json; charset=utf-8" },
@@ -388,9 +414,7 @@ async function pingIndexNow() {
         host: CANONICAL_HOST,
         key: INDEXNOW_KEY,
         keyLocation: `https://${CANONICAL_HOST}/${INDEXNOW_KEY}.txt`,
-        urlList: ["/", "/updates", "/rumors", "/timeline", "/wall", "/help", "/about"].map(
-          (p) => `https://${CANONICAL_HOST}${p}`
-        ),
+        urlList: paths.map((p) => `https://${CANONICAL_HOST}${p}`),
       }),
     });
     console.log(JSON.stringify({ level: "info", event: "indexnow", status: res.status }));

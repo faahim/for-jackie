@@ -62,8 +62,11 @@
     return (
       '<li class="update ' + esc(u.tone || "info") + '">' +
       '<div class="when"><span class="tone-dot"></span>' + esc(prettyDate(u.date)) + "</div>" +
-      "<h3>" + esc(u.title) + "</h3>" +
+      "<h3>" +
+      (u.id ? '<a href="/updates/' + esc(u.id) + '">' + esc(u.title) + "</a>" : esc(u.title)) +
+      "</h3>" +
       "<p>" + esc(u.body) + "</p>" +
+      (u.id && u.longBody ? '<a class="more-link" href="/updates/' + esc(u.id) + '">Read the full update →</a>' : "") +
       sourcesHtml(u.sources) +
       "</li>"
     );
