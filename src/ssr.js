@@ -718,6 +718,7 @@ Current summary: ${(c.headline && c.headline.lede) || ""}
 ## Official sources
 
 - [Friends of Big Bear Valley](https://friendsofbigbearvalley.org/): runs the nest cameras; the official voice of Jackie and Shadow's story
+- [Official live nest cams](https://friendsofbigbearvalley.org/livestream/): FOBBV's livestream page (Jackie is recovering off-camera at ORC; the cams show the nest territory)
 - [Ojai Raptor Center](https://www.ojairaptorcenter.org/): the facility caring for Jackie
 `;
 }
