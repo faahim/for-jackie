@@ -726,7 +726,7 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
 .region-in { animation: region-in 300ms var(--ease-smooth-out); }
 @keyframes region-in { from { opacity: 0; } }
 
-/* ---- message drawer (footer "Faahim") ---- */
+/* ---- message drawer (footer "the keeper") ---- */
 .msg-overlay {
   position: fixed;
   inset: 0;

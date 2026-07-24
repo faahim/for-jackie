@@ -14,6 +14,14 @@
  *   wall:<iso>-<hash8>       — APPROVED wall notes only {name, message, approvedAt}
  */
 
+import { PAGE_FOR_PATH, transformHtml, llmsTxt, llmsFullTxt, sitemapXml } from "./ssr.js";
+
+// IndexNow (instant indexing for Bing & partners). The key is public by
+// design — it only proves we control this host. Served at /<key>.txt.
+const INDEXNOW_KEY = "92a61962b9967228e65b82ffcd4364ba";
+const CANONICAL_HOST = "forjackie.org";
+const ALIAS_HOSTS = ["www.forjackie.org", "for-jackie.pushkunni.workers.dev"];
+
 const WATCHED_FEEDS = [
   {
     id: "gnews",
@@ -57,10 +65,19 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
+      // Canonical host: page requests on aliases 301 to forjackie.org so
+      // search engines see exactly one copy of the site. API routes are
+      // exempt — the pipelines call them on the workers.dev host.
+      if (ALIAS_HOSTS.includes(url.hostname) && !url.pathname.startsWith("/api/")) {
+        url.hostname = CANONICAL_HOST;
+        url.protocol = "https:";
+        url.port = "";
+        return Response.redirect(url.toString(), 301);
+      }
       if (url.pathname.startsWith("/api/")) {
         return await handleApi(request, url, env, ctx);
       }
-      return await env.ASSETS.fetch(request);
+      return await handlePage(request, url, env);
     } catch (err) {
       console.log(JSON.stringify({ level: "error", path: url.pathname, message: String(err) }));
       return json({ ok: false, error: "internal error" }, 500);
@@ -228,6 +245,7 @@ async function handleApi(request, url, env, ctx) {
       `audit:${now}`,
       JSON.stringify({ actor: body.actor || "unknown", note: body.note || "", bytes: doc.length })
     );
+    ctx.waitUntil(pingIndexNow());
     return json({ ok: true, updatedAt: now });
   }
 
@@ -295,6 +313,90 @@ async function handleApi(request, url, env, ctx) {
   }
 
   return json({ ok: false, error: "not found" }, 404);
+}
+
+// ---------- pages: edge rendering + machine-readable routes ----------
+
+/** Live content doc (KV, falling back to the seed asset). Null on failure. */
+async function contentDoc(env, origin) {
+  try {
+    const stored = await env.KV.get("content", "json");
+    if (stored) return stored;
+    const seed = await env.ASSETS.fetch(new URL("/content.json", origin));
+    return seed.ok ? await seed.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Serve site pages with the live content rendered into the HTML at the edge
+ * (AI crawlers don't execute JavaScript — see src/ssr.js), plus the
+ * machine-readable discovery routes. Any SSR failure falls back to the
+ * untouched static asset: the site must never break because of this layer.
+ */
+async function handlePage(request, url, env) {
+  if (url.pathname === "/sitemap.xml" || url.pathname === "/llms.txt" || url.pathname === "/llms-full.txt") {
+    const c = await contentDoc(env, url.origin);
+    if (!c) return json({ ok: false, error: "content unavailable" }, 503);
+    if (url.pathname === "/sitemap.xml") {
+      return new Response(sitemapXml(c), {
+        headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=300" },
+      });
+    }
+    const text = url.pathname === "/llms.txt" ? llmsTxt(c) : llmsFullTxt(c);
+    return new Response(text, {
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=300" },
+    });
+  }
+
+  const page = PAGE_FOR_PATH[url.pathname];
+  if (page && request.method === "GET") {
+    try {
+      // Strip conditional headers: the response body varies with the content
+      // doc, so a 304 against the static asset would pin stale content.
+      const headers = new Headers(request.headers);
+      headers.delete("if-none-match");
+      headers.delete("if-modified-since");
+      const [assetRes, c] = await Promise.all([
+        env.ASSETS.fetch(new Request(url.toString(), { headers })),
+        contentDoc(env, url.origin),
+      ]);
+      if (c && assetRes.ok && (assetRes.headers.get("content-type") || "").includes("text/html")) {
+        return transformHtml(page, assetRes, c);
+      }
+      return assetRes;
+    } catch (err) {
+      console.log(JSON.stringify({ level: "error", event: "ssr", path: url.pathname, message: String(err) }));
+      return env.ASSETS.fetch(request);
+    }
+  }
+
+  return env.ASSETS.fetch(request);
+}
+
+/**
+ * Tell IndexNow-participating engines (Bing, and via them much of the AI
+ * search ecosystem) that the site changed. Fire-and-forget from publishes.
+ */
+async function pingIndexNow() {
+  try {
+    const res = await fetch("https://api.indexnow.org/indexnow", {
+      method: "POST",
+      headers: { "content-type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        host: CANONICAL_HOST,
+        key: INDEXNOW_KEY,
+        keyLocation: `https://${CANONICAL_HOST}/${INDEXNOW_KEY}.txt`,
+        urlList: ["/", "/updates", "/rumors", "/timeline", "/wall", "/help", "/about"].map(
+          (p) => `https://${CANONICAL_HOST}${p}`
+        ),
+      }),
+    });
+    console.log(JSON.stringify({ level: "info", event: "indexnow", status: res.status }));
+  } catch (err) {
+    console.log(JSON.stringify({ level: "warn", event: "indexnow-failed", message: String(err) }));
+  }
 }
 
 // ---------- visitor messages ----------

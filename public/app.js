@@ -1,7 +1,7 @@
 /* For Jackie — client renderer. Renders instantly from the last cached content
  * document (no layout jitter), then refreshes from the live API and re-renders
  * only when something actually changed. Also: freshness stamps in the visitor's
- * local time, soothing first-view reveals, and the "message Fahim" drawer. */
+ * local time, soothing first-view reveals, and the "message the keeper" drawer. */
 (function () {
   "use strict";
 
@@ -317,7 +317,10 @@
         if (content.meta.updatedAt !== lastRendered) {
           // Cold load (nothing rendered yet) fades in; a genuine content
           // change cross-fades. Identical content never reaches this branch.
-          render(content, lastRendered === null ? "enter" : "update");
+          // Server-rendered pages (body[data-ssr]) already show real content,
+          // so the first live render must be silent, not an entrance.
+          var entrance = document.body.hasAttribute("data-ssr") ? "cache" : "enter";
+          render(content, lastRendered === null ? entrance : "update");
           lastRendered = content.meta.updatedAt || null;
         } else {
           renderStamps(content); // "today"/"yesterday" wording can drift across midnight
@@ -821,7 +824,7 @@
     return sheetApi;
   }
 
-  // ---- More menu (mobile tab bar): Timeline, About, Write to Fahim ----
+  // ---- More menu (mobile tab bar): Timeline, About, Write to the keeper ----
 
   var moreContent = null;
   var moreBtn = document.querySelector(".tabbar .more");
@@ -833,7 +836,7 @@
           '<nav class="sheet-rows" aria-label="More pages">' +
           '<a class="sheet-row" href="/timeline"><span class="eyebrow">The story of 2026</span><span class="row-title">Timeline</span></a>' +
           '<a class="sheet-row" href="/about"><span class="eyebrow">Why this exists · sources</span><span class="row-title">About this page</span></a>' +
-          '<button class="sheet-row" type="button"><span class="eyebrow">Say hello</span><span class="row-title">Write to Fahim</span></button>' +
+          '<button class="sheet-row" type="button"><span class="eyebrow">Say hello</span><span class="row-title">Write to the keeper</span></button>' +
           "</nav>";
         moreContent.querySelector("button.sheet-row").addEventListener("click", function () {
           openDrawer(); // swaps the open sheet's content to the contact form
@@ -843,7 +846,7 @@
     });
   }
 
-  // ---- "Made with love by Faahim" message drawer ----
+  // ---- "Made with love" message drawer ----
   // One shared content node: mounted in the centered dialog on desktop,
   // in the bottom sheet on phones (<720px).
 
@@ -884,8 +887,8 @@
     msgContent.className = "msg-content";
     msgContent.innerHTML =
       '<p class="eyebrow">Say hello</p>' +
-      '<h3 id="msg-title">A note for Fahim</h3>' +
-      '<p class="msg-intro">Hi — I’m Fahim. I tend this page with a lot of help from the watchers of the nest. Corrections, official links we missed, or just a kind word — all of it is welcome here.</p>' +
+      '<h3 id="msg-title">A note for the keeper</h3>' +
+      '<p class="msg-intro">Hi — I’m the volunteer who tends this page, with a lot of help from the watchers of the nest. Corrections, official links we missed, or just a kind word — all of it is welcome here.</p>' +
       '<form class="msg-form" novalidate>' +
       '<label class="msg-field"><span class="lbl">Your name <em>· optional</em></span>' +
       '<input name="name" maxlength="120" autocomplete="name"></label>' +
@@ -901,7 +904,7 @@
       "</div>" +
       "</form>" +
       '<div class="msg-done" hidden>' +
-      "<p><strong>Thank you — Fahim reads every message.</strong></p>" +
+      "<p><strong>Thank you — the keeper reads every message.</strong></p>" +
       "<p>It means a lot that you took a moment. Be kind to yourself, and keep an eye on the nest.</p>" +
       '<button type="button" class="btn quiet" data-close>Close</button>' +
       "</div>";
@@ -1008,7 +1011,7 @@
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
-  // Every opener on the page ("Faahim", "Write to Fahim", "Send a correction…")
+  // Every opener on the page (footer buttons, "Send a correction…")
   Array.prototype.slice.call(document.querySelectorAll("[data-open-msg]")).forEach(function (btn) {
     btn.addEventListener("click", openDrawer);
   });

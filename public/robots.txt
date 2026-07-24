@@ -1,0 +1,12 @@
+# forjackie.org — community-run, source-linked live updates about Jackie,
+# the Big Bear bald eagle. Everything here is meant to be found, read, and
+# cited — search engines and AI assistants alike are welcome.
+#
+# Machine-readable summaries: https://forjackie.org/llms.txt
+# Full plain-text content:    https://forjackie.org/llms-full.txt
+
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://forjackie.org/sitemap.xml
