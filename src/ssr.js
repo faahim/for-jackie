@@ -540,7 +540,7 @@ export function renderUpdatePage(found, c) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
-<link rel="stylesheet" href="/styles.css?v=9">
+<link rel="stylesheet" href="/styles.css?v=10">
 <link rel="canonical" href="${esc(url)}">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
@@ -655,7 +655,7 @@ ${bannerHtml}
   </button>
 </nav>
 
-<script src="/app.js?v=9" defer></script>
+<script src="/app.js?v=10" defer></script>
 </body>
 </html>
 `;
@@ -670,7 +670,7 @@ export function renderUpdate404() {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Update not found · For Jackie</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/styles.css?v=9">
+<link rel="stylesheet" href="/styles.css?v=10">
 </head>
 <body data-page="post">
 <main>
