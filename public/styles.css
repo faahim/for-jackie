@@ -1013,6 +1013,10 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
 /* ---- update permalink pages (/updates/<id>) ---- */
 .update h3 a { color: inherit; text-decoration: none; }
 .update h3 a:hover, .update h3 a:focus-visible { color: var(--lake); text-decoration: underline; text-underline-offset: 3px; }
+/* Whole card opens the update (app.js delegated click — text selection and
+   source chips keep working); the title link stays the accessible path. */
+.update:has(h3 a) { cursor: pointer; transition: border-color var(--duration-quick, 160ms) var(--ease-out, ease); }
+.update:has(h3 a):hover { border-color: var(--lake); }
 .backlink {
   display: inline-block;
   font-family: var(--mono);

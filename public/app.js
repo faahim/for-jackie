@@ -1018,4 +1018,17 @@
   Array.prototype.slice.call(document.querySelectorAll("[data-open-msg]")).forEach(function (btn) {
     btn.addEventListener("click", openDrawer);
   });
+
+  // ---- whole update card opens its permalink ----
+  // Delegated (cards re-render), and deliberately forgiving: clicks on links
+  // or buttons pass through, and an active text selection never navigates —
+  // people copy update text to share, and that must keep working.
+  document.addEventListener("click", function (e) {
+    var card = e.target.closest && e.target.closest(".update");
+    if (!card || e.target.closest("a, button")) return;
+    var sel = window.getSelection && window.getSelection();
+    if (sel && String(sel).length) return;
+    var link = card.querySelector("h3 a");
+    if (link) window.location.assign(link.href);
+  });
 })();

@@ -540,7 +540,7 @@ export function renderUpdatePage(found, c) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
-<link rel="stylesheet" href="/styles.css?v=8">
+<link rel="stylesheet" href="/styles.css?v=9">
 <link rel="canonical" href="${esc(url)}">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
@@ -655,7 +655,7 @@ ${bannerHtml}
   </button>
 </nav>
 
-<script src="/app.js?v=8" defer></script>
+<script src="/app.js?v=9" defer></script>
 </body>
 </html>
 `;
@@ -670,7 +670,7 @@ export function renderUpdate404() {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Update not found · For Jackie</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/styles.css?v=8">
+<link rel="stylesheet" href="/styles.css?v=9">
 </head>
 <body data-page="post">
 <main>
@@ -718,7 +718,8 @@ Current summary: ${(c.headline && c.headline.lede) || ""}
 ## Official sources
 
 - [Friends of Big Bear Valley](https://friendsofbigbearvalley.org/): runs the nest cameras; the official voice of Jackie and Shadow's story
-- [Official live nest cams](https://friendsofbigbearvalley.org/livestream/): FOBBV's livestream page (Jackie is recovering off-camera at ORC; the cams show the nest territory)
+- [Official live nest cams on YouTube](https://www.youtube.com/channel/UCsFgbVuhRrPV5FqyN7kOD8g/live): FOBBV CAM, the official channel (Jackie is recovering off-camera at ORC; the cams show the nest territory)
+- [FOBBV livestream page](https://friendsofbigbearvalley.org/livestream/): both cams plus viewing tips, straight from the source
 - [Ojai Raptor Center](https://www.ojairaptorcenter.org/): the facility caring for Jackie
 `;
 }
