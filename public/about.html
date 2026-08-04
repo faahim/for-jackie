@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>About &amp; Sources — For Jackie</title>
 <meta name="description" content="What For Jackie is, who runs it, how facts are verified, and every source used.">
-<link rel="stylesheet" href="/styles.css?v=10">
+<link rel="stylesheet" href="/styles.css?v=11">
 <link rel="canonical" href="https://forjackie.org/about">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
@@ -103,20 +103,26 @@ document.documentElement.classList.add("js");
   <section class="reveal">
     <p class="eyebrow">Receipts</p>
     <h2>Sources</h2>
-    <p class="section-intro">Dates are publication dates.</p>
-    <ul class="sources">
+    <p class="section-intro">Every source cited in an update or a rumor check, listed once. Dates are publication dates.</p>
+    <!-- Generated from the live content document (updates[] + rumors[]) by
+         src/ssr.js at the edge and public/app.js in the browser. These two
+         entries are the standing official links and the no-JS fallback if
+         both renderers fail — do not hand-add cited sources here again. -->
+    <ul class="sources" id="sources">
       <li><a rel="noopener" target="_blank" href="https://friendsofbigbearvalley.org/">Friends of Big Bear Valley</a><span class="mono">official · nest cams &amp; updates</span></li>
       <li><a rel="noopener" target="_blank" href="https://www.ojairaptorcenter.org/">Ojai Raptor Center</a><span class="mono">official · Jackie's care facility</span></li>
-      <li><a rel="noopener" target="_blank" href="https://www.nbclosangeles.com/news/local/big-bear-eagle-rescue/3919695/">NBC Los Angeles · rescue &amp; recovery</a><span class="mono">jul 19, 2026</span></li>
-      <li><a rel="noopener" target="_blank" href="https://www.vvng.com/jackie-underweight-but-alert-as-friends-of-big-bear-valley-shares-new-details-of-big-bear-bald-eagles-rescue/">VVNG · rescue details from FOBBV</a><span class="mono">jul 20, 2026</span></li>
-      <li><a rel="noopener" target="_blank" href="https://www.vvng.com/rescued-big-bear-bald-eagle-confirmed-to-be-jackie-receiving-specialized-care-at-ojai-raptor-center/">VVNG · identity confirmed</a><span class="mono">jul 20, 2026</span></li>
-      <li><a rel="noopener" target="_blank" href="https://www.nbcpalmsprings.com/2026/07/20/big-bear-bald-eagle-jackie-moved-to-ojai-raptor-center-for-specialized-care">NBC Palm Springs · move to Ojai</a><span class="mono">jul 20, 2026</span></li>
-      <li><a rel="noopener" target="_blank" href="https://www.goodmorningamerica.com/living/story/big-bear-eagle-presumed-jackie-stable-after-rescued-134925837">Good Morning America · Shadow &amp; the eaglets</a><span class="mono">jul 20, 2026</span></li>
-      <li><a rel="noopener" target="_blank" href="https://ktla.com/news/local-news/wildlife-center-caring-for-jackie-the-bald-eagle-receives-tens-of-thousands-of-dollars-in-donations/">KTLA · donation response</a><span class="mono">jul 21, 2026</span></li>
-      <li><a rel="noopener" target="_blank" href="https://www.popsci.com/environment/bald-eagle-jackie-injured-rehab/">Popular Science · recovery reporting</a><span class="mono">jul 20, 2026</span></li>
+    </ul>
+  </section>
+
+  <section class="reveal">
+    <p class="eyebrow">Before the rescue</p>
+    <h2>Background reading</h2>
+    <p class="section-intro">Reporting from Jackie and Shadow's 2026 season, kept for the record. These are settled stories, not live sources.</p>
+    <ul class="sources">
       <li><a rel="noopener" target="_blank" href="https://www.popsci.com/environment/jackie-shadow-chick-names-2026-sandy-luna/">Popular Science · Sandy &amp; Luna named</a><span class="mono">may 2026</span></li>
       <li><a rel="noopener" target="_blank" href="https://www.foxweather.com/earth-space/names-announced-2026-bald-eaglets-jackie-shadow-friends-of-big-bear-valley-sandy-luna">FOX Weather · 2026 season details</a><span class="mono">may 2026</span></li>
       <li><a rel="noopener" target="_blank" href="https://www.aol.com/articles/jackie-shadow-eaglets-fledge-leaving-211911373.html">AOL · Sandy &amp; Luna fledge</a><span class="mono">jun 29, 2026</span></li>
+      <li><a rel="noopener" target="_blank" href="https://ktla.com/news/local-news/wildlife-center-caring-for-jackie-the-bald-eagle-receives-tens-of-thousands-of-dollars-in-donations/">KTLA · donation response to ORC</a><span class="mono">jul 21, 2026</span></li>
     </ul>
   </section>
 
@@ -169,6 +175,6 @@ document.documentElement.classList.add("js");
   </button>
 </nav>
 
-<script src="/app.js?v=10" defer></script>
+<script src="/app.js?v=11" defer></script>
 </body>
 </html>

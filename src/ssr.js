@@ -134,6 +134,61 @@ function communityHtml(community) {
     .join("");
 }
 
+/**
+ * The About page's "Sources" list, derived from the live document instead of
+ * hand-maintained markup. Every URL cited anywhere in updates[] or rumors[]
+ * appears exactly once, in document order (newest first, since updates[] is).
+ *
+ * Source labels are "Outlet · Mon DD" — the outlet becomes the link text and
+ * the date the mono stamp. Keep this mirrored with citedSourcesHtml in app.js.
+ */
+const PINNED_SOURCES = [
+  {
+    url: "https://friendsofbigbearvalley.org/",
+    name: "Friends of Big Bear Valley",
+    date: "official · nest cams & updates",
+  },
+  {
+    url: "https://www.ojairaptorcenter.org/",
+    name: "Ojai Raptor Center",
+    date: "official · Jackie's care facility",
+  },
+];
+
+function citedSources(c) {
+  const seen = new Set();
+  const items = [];
+  for (const p of PINNED_SOURCES) {
+    seen.add(p.url);
+    items.push(p);
+  }
+  const add = (s) => {
+    if (!s || !s.url || seen.has(s.url)) return;
+    seen.add(s.url);
+    const label = String(s.label || "");
+    const cut = label.lastIndexOf(" · ");
+    items.push({
+      url: s.url,
+      name: cut > 0 ? label.slice(0, cut) : label || "source",
+      date: cut > 0 ? label.slice(cut + 3) : "",
+    });
+  };
+  for (const u of c.updates || []) (u.sources || []).forEach(add);
+  for (const r of c.rumors || []) (r.sources || []).forEach(add);
+  return items;
+}
+
+function citedSourcesHtml(c) {
+  return citedSources(c)
+    .map(
+      (s) =>
+        '<li><a rel="noopener" target="_blank" href="' + esc(s.url) + '">' + esc(s.name) + "</a>" +
+        (s.date ? '<span class="mono">' + esc(s.date) + "</span>" : "") +
+        "</li>"
+    )
+    .join("");
+}
+
 function fmtDateUTC(iso) {
   const d = new Date(iso);
   if (isNaN(d)) return null;
@@ -372,6 +427,10 @@ export function transformHtml(page, assetRes, c) {
 
   if (page === "timeline" && c.timeline) {
     rewriter.on("#timeline", new InnerHtml(timelineHtml(c.timeline)));
+  }
+
+  if (page === "about") {
+    rewriter.on("#sources", new InnerHtml(citedSourcesHtml(c)));
   }
 
   if (page === "wall" && Array.isArray(c.community) && c.community.length) {

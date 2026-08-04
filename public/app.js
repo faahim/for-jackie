@@ -104,6 +104,54 @@
     };
   }
 
+  // The About page's "Sources" list, derived from the live document rather
+  // than hand-maintained markup: every URL cited in updates[] or rumors[],
+  // once, in document order (newest first). Source labels are
+  // "Outlet · Mon DD" — outlet becomes the link, the date the mono stamp.
+  // Keep mirrored with citedSourcesHtml in src/ssr.js.
+  var PINNED_SOURCES = [
+    {
+      url: "https://friendsofbigbearvalley.org/",
+      name: "Friends of Big Bear Valley",
+      date: "official · nest cams & updates",
+    },
+    {
+      url: "https://www.ojairaptorcenter.org/",
+      name: "Ojai Raptor Center",
+      date: "official · Jackie's care facility",
+    },
+  ];
+
+  function citedSourcesHtml(content) {
+    var seen = {}, items = [];
+    PINNED_SOURCES.forEach(function (p) {
+      seen[p.url] = true;
+      items.push(p);
+    });
+    function add(s) {
+      if (!s || !s.url || seen[s.url]) return;
+      seen[s.url] = true;
+      var label = String(s.label || "");
+      var cut = label.lastIndexOf(" · ");
+      items.push({
+        url: s.url,
+        name: cut > 0 ? label.slice(0, cut) : label || "source",
+        date: cut > 0 ? label.slice(cut + 3) : "",
+      });
+    }
+    (content.updates || []).forEach(function (u) { (u.sources || []).forEach(add); });
+    (content.rumors || []).forEach(function (r) { (r.sources || []).forEach(add); });
+    return items
+      .map(function (s) {
+        return (
+          '<li><a rel="noopener" target="_blank" href="' + esc(s.url) + '">' + esc(s.name) + "</a>" +
+          (s.date ? '<span class="mono">' + esc(s.date) + "</span>" : "") +
+          "</li>"
+        );
+      })
+      .join("");
+  }
+
   var stampMeta = null;
   var stampConfirmed = false; // true once a live fetch has vouched for checkedAt
 
@@ -255,6 +303,11 @@
           communitySection.hidden = true;
         }
       }
+    }
+
+    if (page === "about") {
+      el = document.getElementById("sources");
+      if (el) setHtml(el, citedSourcesHtml(content), mode);
     }
 
     if (page === "timeline") {
