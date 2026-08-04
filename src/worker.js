@@ -58,6 +58,29 @@ const WATCHED_FEEDS = [
     label: "FOBBV CAM (YouTube)",
     url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCsFgbVuhRrPV5FqyN7kOD8g",
   },
+  {
+    // Low yield today (ORC posts patient updates to Instagram, not here), but
+    // it is a real first-party feed and a release video would land on it.
+    id: "yt-orc",
+    kind: "atom",
+    label: "Ojai Raptor Center (YouTube)",
+    url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCIJOODtH3VUIZWk8tnImmTw",
+  },
+];
+
+// Pages that embed Instagram posts we care about. ORC hand-embeds its major
+// patient-update reels on its homepage, so a new embed there is a strong
+// signal — and the permalink it yields is exactly what first-party primacy
+// wants cited. This is deliberately NOT a claim to see every ORC post:
+// Instagram's profile listing is login-walled from datacenter IPs, so photo
+// posts that ORC never embeds still need the local browser sweep.
+const INSTAGRAM_EMBED_PAGES = [
+  {
+    id: "orc-site-ig",
+    label: "ORC Instagram (embedded on ojairaptorcenter.org)",
+    url: "https://www.ojairaptorcenter.org/",
+    max: 6,
+  },
 ];
 
 const WATCHED_PAGES = [
@@ -329,6 +352,26 @@ async function handleApi(request, url, env, ctx) {
     return json({ ok: true, result });
   }
 
+  // First-party primacy, on demand: given an Instagram permalink, return the
+  // official caption verbatim so an entry can be written from the source's own
+  // words rather than an outlet's paraphrase. Read-only, no account involved.
+  if (route === "GET /api/ig-caption") {
+    const target = url.searchParams.get("url") || "";
+    const [post] = extractInstagramPosts(target, 1);
+    if (!post) {
+      return json({ ok: false, error: "pass ?url= an instagram.com/p/… or /reel/… permalink" }, 400);
+    }
+    const caption = await fetchInstagramCaption(post);
+    if (!caption) {
+      return json({ ok: false, error: "could not read that post's caption" }, 502);
+    }
+    return json({
+      ok: true,
+      url: `https://www.instagram.com/${post.type}/${post.code}/`,
+      caption,
+    });
+  }
+
   return json({ ok: false, error: "not found" }, 404);
 }
 
@@ -597,8 +640,163 @@ async function pollSources(env) {
     }
   }
 
+  await pollInstagramEmbeds(env, summary);
+
   console.log(JSON.stringify({ level: "info", event: "poll", ...summary }));
   return summary;
+}
+
+/**
+ * Instagram watcher, in two public hops that need no account and no API key:
+ *
+ *   1. discovery — read the permalinks ORC embeds on its own site
+ *   2. content   — fetch each post's caption from Instagram's public
+ *                  /embed/captioned/ endpoint (the same one any site
+ *                  embedding a post hits)
+ *
+ * Both verified working from datacenter egress. The caption is the official
+ * text itself, so candidates carry ORC's own words plus the permalink —
+ * which is what updates[] should cite, ahead of any news paraphrase.
+ */
+async function pollInstagramEmbeds(env, summary) {
+  for (const page of INSTAGRAM_EMBED_PAGES) {
+    try {
+      const res = await fetch(page.url, { headers: { "user-agent": FETCH_UA, accept: "text/html" } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const posts = extractInstagramPosts(await res.text(), page.max);
+
+      // Zero permalinks means the page stopped embedding them or its markup
+      // changed. Either way this watcher is now blind, and a blind watcher
+      // that reports "nothing new" is worse than one that reports nothing:
+      // the portal looks fresh while going stale. Say so, loudly.
+      if (!posts.length) {
+        summary.sources[page.id] = { ok: false, error: "no Instagram permalinks found — discovery may be broken" };
+        await reportWatcherBreakage(env, page.label, "found no Instagram permalinks on the page it watches");
+        continue;
+      }
+
+      let fresh = 0;
+      let failed = 0;
+      for (const post of posts) {
+        const seenKey = `seen:ig:${post.code}`;
+        if (await env.KV.get(seenKey)) continue;
+
+        const caption = await fetchInstagramCaption(post);
+        if (!caption) {
+          // Reached the post but could not read it: embed markup changed.
+          failed++;
+          continue; // deliberately not marked seen, so a fix picks it up next run
+        }
+        await env.KV.put(seenKey, "1", { expirationTtl: 60 * 60 * 24 * 180 });
+
+        const permalink = `https://www.instagram.com/${post.type}/${post.code}/`;
+        const hash = await shortHash(post.code);
+        const firstLine = caption.split("\n").find((l) => l.trim()) || "New Instagram post";
+        await env.KV.put(
+          `cand:${new Date().toISOString()}-${hash}`,
+          JSON.stringify({
+            source: page.label,
+            title: firstLine.slice(0, 120),
+            url: permalink,
+            note: `Official Instagram post, full caption as published:\n\n${caption}`,
+            detectedAt: new Date().toISOString(),
+          })
+        );
+        fresh++;
+        await notifyTelegram(
+          env,
+          `🦅 New ORC Instagram post\n${permalink}\n\n${caption.slice(0, 600)}${caption.length > 600 ? "…" : ""}`
+        );
+      }
+
+      if (failed) {
+        await reportWatcherBreakage(env, page.label, `could not parse ${failed} Instagram caption(s) — embed markup may have changed`);
+      }
+      summary.sources[page.id] = { ok: true, posts: posts.length, fresh, unparseable: failed };
+      summary.newCandidates += fresh;
+    } catch (err) {
+      summary.sources[page.id] = { ok: false, error: String(err) };
+    }
+  }
+}
+
+/** Pull {type, code} for each distinct Instagram permalink in a page's HTML. */
+function extractInstagramPosts(html, limit = 6) {
+  const out = [];
+  const seen = new Set();
+  for (const m of html.matchAll(/instagram\.com\/(reel|p)\/([A-Za-z0-9_-]{5,})/g)) {
+    if (seen.has(m[2])) continue;
+    seen.add(m[2]);
+    out.push({ type: m[1], code: m[2] });
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+async function fetchInstagramCaption(post) {
+  try {
+    const res = await fetch(`https://www.instagram.com/${post.type}/${post.code}/embed/captioned/`, {
+      headers: { "user-agent": FETCH_UA, accept: "text/html" },
+    });
+    if (!res.ok) return null;
+    return extractInstagramCaption(await res.text());
+  } catch {
+    return null;
+  }
+}
+
+/** Embed markup: <div class="Caption"><a class="CaptionUsername">…</a>TEXT<div class="CaptionComments"> */
+function extractInstagramCaption(html) {
+  const start = html.indexOf('<div class="Caption"');
+  if (start === -1) return null;
+  let seg = html.slice(start);
+  const end = seg.indexOf('<div class="CaptionComments"');
+  if (end !== -1) seg = seg.slice(0, end);
+  seg = seg
+    .replace(/<a class="CaptionUsername"[\s\S]*?<\/a>/, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "");
+  const text = decodeEntities(seg).replace(/\n{3,}/g, "\n\n").trim();
+  return text || null;
+}
+
+/**
+ * A silent watcher failure is the dangerous one on a trust-first portal, so
+ * breakage is surfaced the same way news is: a candidate plus a Telegram ping.
+ * Throttled to one alert per source per day so a persistent break does not
+ * turn into a notification storm.
+ */
+async function reportWatcherBreakage(env, label, detail) {
+  const day = new Date().toISOString().slice(0, 10);
+  const key = `seen:watcher-alert:${await shortHash(label + day)}`;
+  if (await env.KV.get(key)) return;
+  await env.KV.put(key, "1", { expirationTtl: 60 * 60 * 48 });
+  console.log(JSON.stringify({ level: "warn", event: "watcher-breakage", label, detail }));
+  await env.KV.put(
+    `cand:${new Date().toISOString()}-watcher-alert`,
+    JSON.stringify({
+      source: "watcher-health",
+      title: `Watcher may be broken: ${label}`,
+      url: null,
+      note: `${label} ${detail}. Until this is fixed, treat the cloud watcher as blind for this source and fall back to the local browser sweep.`,
+      detectedAt: new Date().toISOString(),
+    })
+  );
+  await notifyTelegram(env, `⚠️ For Jackie watcher problem\n${label} ${detail}.`);
+}
+
+async function notifyTelegram(env, text) {
+  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text, disable_web_page_preview: true }),
+    });
+    if (!res.ok) throw new Error(`telegram HTTP ${res.status}`);
+  } catch (err) {
+    console.log(JSON.stringify({ level: "warn", event: "telegram-notify-failed", message: String(err) }));
+  }
 }
 
 // ---------- parsing helpers ----------

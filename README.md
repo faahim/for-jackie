@@ -21,9 +21,17 @@ One Cloudflare Worker (`src/worker.js`) does everything:
 - **Publishing** — `POST /api/publish` (Bearer token) replaces the content
   document, snapshots every version (`version:*`), and logs to an audit trail
   (`audit:*`). The site reflects changes instantly; no rebuild.
-- **Watcher** — a `*/15` cron polls Google News RSS, the FOBBV CAM YouTube feed,
-  and watches the FOBBV/ORC sites for content changes. New findings become
-  *candidates* (`cand:*` in KV) — never published directly.
+- **Watcher** — a `*/15` cron polls Google News RSS, the FOBBV CAM and ORC
+  YouTube feeds, and watches the FOBBV/ORC sites for content changes. It also
+  reads the Instagram posts ORC embeds on its own site, pulling each caption
+  from Instagram's public `/embed/captioned/` endpoint — no account, no API
+  key. New findings become *candidates* (`cand:*` in KV) — never published
+  directly. If discovery finds nothing to read, or a caption won't parse, the
+  watcher files a `watcher-health` candidate and pings Telegram rather than
+  reporting a quiet day.
+- **Caption lookup** — `GET /api/ig-caption?url=<instagram permalink>` (Bearer)
+  returns that post's caption verbatim, so an update can be written from the
+  source's own words rather than a news paraphrase.
 - **Candidates API** — `GET/POST /api/candidates`, `POST /api/candidates/resolve`
   (Bearer token). The verification agent consumes these; humans and the local
   browser-watcher can inject tips too. `POST /api/poll` runs the watcher on demand.

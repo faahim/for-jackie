@@ -4,3 +4,4 @@ node_modules/
 .publish-token
 CLAUDE.md
 .telegram-token
+.dev.vars
