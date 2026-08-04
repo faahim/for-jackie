@@ -691,6 +691,16 @@ async function pollInstagramEmbeds(env, summary) {
 
         const permalink = `https://www.instagram.com/${post.type}/${post.code}/`;
         const hash = await shortHash(post.code);
+
+        // Claim this post in the ingest namespace too, so the local browser
+        // sweep re-submitting the same post is dropped by POST /api/candidates
+        // instead of queueing a twin for the verification agent. The sweep is
+        // told to send dedupeKey `orc-ig-<shortcode>` with the exact `url`
+        // GET /api/ig-caption returns, which is this same permalink string —
+        // that is what makes the two hashes line up.
+        await env.KV.put(`seen:ingest:${await shortHash(`orc-ig-${post.code}` + permalink)}`, "1", {
+          expirationTtl: 60 * 60 * 24 * 90,
+        });
         const firstLine = caption.split("\n").find((l) => l.trim()) || "New Instagram post";
         await env.KV.put(
           `cand:${new Date().toISOString()}-${hash}`,
