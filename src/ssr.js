@@ -330,7 +330,7 @@ export function jsonLdFor(page, c) {
       base("/wall", {
         name: "Wall of Love — a moderated community guestbook for Jackie",
         description:
-          "Notes of hope from Jackie's worldwide community. Every note is read by a volunteer before it appears.",
+          "Notes of hope from Jackie's worldwide community. Every note is checked before it appears.",
       })
     );
   }

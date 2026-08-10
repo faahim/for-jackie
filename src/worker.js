@@ -270,6 +270,25 @@ async function handleApi(request, url, env, ctx) {
     return json({ ok: true, removed: key });
   }
 
+  if (route === "POST /api/notify") {
+    // Relay a message to the maintainer's Telegram. Exists so the scheduled
+    // agents (which hold the publish token but not the bot secrets) have a way
+    // to reach a human. Deliberately dumb: it forwards text and nothing else,
+    // so a compromised token can spam Telegram but cannot touch the portal.
+    const body = await request.json().catch(() => null);
+    const text = body && typeof body.text === "string" ? body.text.trim() : "";
+    if (!text) return json({ ok: false, error: "text is required" }, 400);
+    if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+      return json({ ok: false, error: "telegram is not configured" }, 503);
+    }
+    const label = typeof body.label === "string" ? body.label.trim().slice(0, 40) : "";
+    const delivered = await notifyTelegram(env, `${label || "🔔 For Jackie"}\n${text.slice(0, 3500)}`);
+    // Report a failed send honestly — an agent that believes it notified a human
+    // when it did not is the same silent-failure mode as a blind watcher.
+    if (!delivered) return json({ ok: false, error: "telegram send failed" }, 502);
+    return json({ ok: true, delivered: true });
+  }
+
   if (route === "POST /api/publish") {
     const body = await request.json();
     const content = body && body.content;
@@ -795,8 +814,14 @@ async function reportWatcherBreakage(env, label, detail) {
   await notifyTelegram(env, `⚠️ For Jackie watcher problem\n${label} ${detail}.`);
 }
 
+/**
+ * Best-effort Telegram ping. Returns true when the message was accepted, false
+ * otherwise — callers that need to know (POST /api/notify) can surface a failed
+ * delivery instead of reporting a notification that never arrived. Existing
+ * fire-and-forget callers ignore the return value.
+ */
 async function notifyTelegram(env, text) {
-  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return;
+  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return false;
   try {
     const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -804,8 +829,10 @@ async function notifyTelegram(env, text) {
       body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text, disable_web_page_preview: true }),
     });
     if (!res.ok) throw new Error(`telegram HTTP ${res.status}`);
+    return true;
   } catch (err) {
     console.log(JSON.stringify({ level: "warn", event: "telegram-notify-failed", message: String(err) }));
+    return false;
   }
 }
 
