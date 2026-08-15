@@ -9,9 +9,11 @@
  *   cand:<iso>-<hash>        — candidate update awaiting the verification agent
  *   seen:<source>:<hash>     — dedupe marker for watched feed items
  *   pagehash:<host>          — last content hash for watched pages
- *   msg:<iso>-<hash8>        — visitor messages (contact) and wall notes
- *                              (kind:"note", status:"pending"|"approved")
- *   wall:<iso>-<hash8>       — APPROVED wall notes only {name, message, approvedAt}
+ *   msg:<iso>-<hash8>        — visitor messages (contact), wall notes and wall
+ *                              stories (kind:"note"|"story", status:"pending"|"approved")
+ *   wall:<iso>-<hash8>       — APPROVED wall entries only {name, message, approvedAt}
+ *                              (+ kind:"story", from for stories)
+ *   story:<hash8>            — approved story by id, for /wall/<hash8> permalinks
  */
 
 import {
@@ -23,6 +25,8 @@ import {
   findUpdate,
   renderUpdatePage,
   renderUpdate404,
+  renderStoryPage,
+  renderStory404,
 } from "./ssr.js";
 
 // IndexNow (instant indexing for Bing & partners). The key is public by
@@ -207,14 +211,30 @@ async function handleApi(request, url, env, ctx) {
   }
 
   if (route === "GET /api/wall") {
-    // Public wall: APPROVED notes only, newest first. The wall:* records hold
-    // exactly {name, message, approvedAt} — but map the fields explicitly so
-    // nothing private (contact, IP, page) can ever leak into this payload.
+    // Public wall: APPROVED entries only, newest first. The wall:* records hold
+    // exactly what displays — but map the fields explicitly so nothing private
+    // (contact, IP, page) can ever leak into this payload. Notes and stories
+    // come back as separate arrays: stories are long-form and permalinked,
+    // and the home page's 3-note teaser must never pull in a 2,500-char story.
     const entries = await listWithValues(env, "wall:", 200);
-    const notes = entries
-      .map((e) => ({ name: e.name || null, message: e.message, approvedAt: e.approvedAt }))
-      .reverse();
-    return json({ ok: true, notes });
+    const notes = [];
+    const stories = [];
+    for (const e of entries) {
+      if (e.kind === "story") {
+        stories.push({
+          id: e.key.slice(-8),
+          name: e.name || null,
+          from: e.from || null,
+          message: e.message,
+          approvedAt: e.approvedAt,
+        });
+      } else {
+        notes.push({ name: e.name || null, message: e.message, approvedAt: e.approvedAt });
+      }
+    }
+    notes.reverse();
+    stories.reverse();
+    return json({ ok: true, notes, stories });
   }
 
   // Everything below requires the publish token.
@@ -230,7 +250,7 @@ async function handleApi(request, url, env, ctx) {
   if (route === "GET /api/wall/pending") {
     const messages = await listWithValues(env, "msg:", 200);
     const pending = messages
-      .filter((m) => m.kind === "note" && m.status === "pending")
+      .filter((m) => (m.kind === "note" || m.kind === "story") && m.status === "pending")
       .reverse(); // newest first
     return json({ ok: true, pending });
   }
@@ -243,20 +263,30 @@ async function handleApi(request, url, env, ctx) {
     }
     const record = await env.KV.get(key, "json");
     if (!record) return json({ ok: false, error: "message not found" }, 404);
-    if (record.kind !== "note") {
-      return json({ ok: false, error: "not a wall note" }, 400);
+    if (record.kind !== "note" && record.kind !== "story") {
+      return json({ ok: false, error: "not a wall note or story" }, 400);
     }
     const approvedAt = new Date().toISOString();
     const hash = key.slice(-8); // reuse the msg hash so the two records stay linked
     const wallKey = `wall:${approvedAt}-${hash}`;
     // The public record carries ONLY what the wall displays — never contact/IP.
-    await env.KV.put(
-      wallKey,
-      JSON.stringify({ name: record.name || null, message: record.message, approvedAt })
-    );
+    const publicRecord = { name: record.name || null, message: record.message, approvedAt };
+    if (record.kind === "story") {
+      publicRecord.kind = "story";
+      publicRecord.from = record.from || null;
+    }
+    await env.KV.put(wallKey, JSON.stringify(publicRecord));
+    if (record.kind === "story") {
+      // O(1) lookup for the /wall/<hash8> permalink page.
+      await env.KV.put(`story:${hash}`, JSON.stringify({ ...publicRecord, wallKey }));
+    }
     await env.KV.put(key, JSON.stringify({ ...record, status: "approved", approvedAt, wallKey }));
-    console.log(JSON.stringify({ level: "info", event: "wall-approve", key, wallKey }));
-    return json({ ok: true, wallKey });
+    console.log(JSON.stringify({ level: "info", event: "wall-approve", key, wallKey, kind: record.kind }));
+    return json({
+      ok: true,
+      wallKey,
+      url: record.kind === "story" ? `https://forjackie.org/wall/${hash}` : undefined,
+    });
   }
 
   if (route === "POST /api/wall/remove") {
@@ -266,6 +296,8 @@ async function handleApi(request, url, env, ctx) {
       return json({ ok: false, error: "key must be a wall:* key" }, 400);
     }
     await env.KV.delete(key);
+    // A story's permalink record must die with it (no-op for plain notes).
+    await env.KV.delete(`story:${key.slice(-8)}`);
     console.log(JSON.stringify({ level: "info", event: "wall-remove", key }));
     return json({ ok: true, removed: key });
   }
@@ -442,6 +474,22 @@ async function handlePage(request, url, env) {
     return new Response(renderUpdatePage(found, c), { headers: html });
   }
 
+  // Per-story permalink pages (/wall/<hash8>): a permanent, shareable home
+  // for one approved memorial story. Fully synthesized at the edge.
+  const storyMatch = url.pathname.match(/^\/wall\/([a-f0-9]{8})\/?$/);
+  if (storyMatch && request.method === "GET") {
+    if (url.pathname.endsWith("/")) {
+      return Response.redirect(url.origin + "/wall/" + storyMatch[1], 301);
+    }
+    const [story, c] = await Promise.all([
+      env.KV.get(`story:${storyMatch[1]}`, "json"),
+      contentDoc(env, url.origin),
+    ]);
+    const html = { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=300" };
+    if (!story) return new Response(renderStory404(), { status: 404, headers: html });
+    return new Response(renderStoryPage(story, storyMatch[1], c), { headers: html });
+  }
+
   const page = PAGE_FOR_PATH[url.pathname];
   if (page && request.method === "GET") {
     try {
@@ -455,7 +503,13 @@ async function handlePage(request, url, env) {
         contentDoc(env, url.origin),
       ]);
       if (c && assetRes.ok && (assetRes.headers.get("content-type") || "").includes("text/html")) {
-        return transformHtml(page, assetRes, c);
+        // The wall page also server-renders its approved notes and stories so
+        // crawlers and no-JS visitors see the real wall, not skeletons.
+        let wallEntries = null;
+        if (page === "wall") {
+          try { wallEntries = await listWithValues(env, "wall:", 200); } catch { /* render without */ }
+        }
+        return transformHtml(page, assetRes, c, wallEntries);
       }
       return assetRes;
     } catch (err) {
@@ -521,18 +575,27 @@ async function handleIncomingMessage(request, env) {
     return json({ ok: true });
   }
 
-  const kind = body.kind === "note" ? "note" : "contact";
+  const kind = body.kind === "note" ? "note" : body.kind === "story" ? "story" : "contact";
   const message = typeof body.message === "string" ? body.message.trim() : "";
   if (!message) {
-    return json({ ok: false, error: kind === "note" ? "please write a note first" : "message is required" }, 400);
+    return json(
+      {
+        ok: false,
+        error:
+          kind === "note" ? "please write a note first" :
+          kind === "story" ? "please write your story first" : "message is required",
+      },
+      400
+    );
   }
-  if (kind === "note") {
-    if (message.length > 500) {
-      return json({ ok: false, error: "note too long (500 characters max)" }, 400);
+  if (kind === "note" || kind === "story") {
+    const max = kind === "note" ? 500 : 2500;
+    if (message.length > max) {
+      return json({ ok: false, error: `${kind} too long (${max} characters max)` }, 400);
     }
     if (body.consent !== true) {
       return json(
-        { ok: false, error: "consent is required — please confirm your note may be displayed publicly" },
+        { ok: false, error: `consent is required — please confirm your ${kind} may be displayed publicly` },
         400
       );
     }
@@ -540,7 +603,9 @@ async function handleIncomingMessage(request, env) {
     return json({ ok: false, error: "message too long (2000 characters max)" }, 400);
   }
   const name =
-    typeof body.name === "string" ? body.name.trim().slice(0, kind === "note" ? 60 : 120) : "";
+    typeof body.name === "string" ? body.name.trim().slice(0, kind === "contact" ? 120 : 60) : "";
+  // Stories may carry a short optional "where you watched from" line.
+  const from = kind === "story" && typeof body.from === "string" ? body.from.trim().slice(0, 80) : "";
   const contact = typeof body.contact === "string" ? body.contact.trim().slice(0, 200) : "";
   const fromPage = typeof body.page === "string" ? body.page.trim().slice(0, 40) : "";
 
@@ -563,21 +628,24 @@ async function handleIncomingMessage(request, env) {
     page: fromPage || null,
     receivedAt,
   };
-  if (kind === "note") {
-    record.kind = "note";
+  if (kind === "note" || kind === "story") {
+    record.kind = kind;
     record.status = "pending"; // displays only after POST /api/wall/approve
     record.consent = true;
+    if (from) record.from = from;
   }
   await env.KV.put(key, JSON.stringify(record));
   console.log(JSON.stringify({ level: "info", event: "message", kind, key, bytes: message.length }));
 
   if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
     try {
-      const label = kind === "note" ? "📝 Wall note (pending)" : "✉️ Message";
+      const label =
+        kind === "note" ? "📝 Wall note (pending)" :
+        kind === "story" ? "📖 Wall story (pending)" : "✉️ Message";
       const text =
         `${label} — For Jackie\n` +
-        `From: ${name || "anonymous"}${contact ? ` (${contact})` : ""}\n` +
-        `Page: ${fromPage || "unknown"}\n\n${message}`;
+        `From: ${name || "anonymous"}${from ? ` · ${from}` : ""}${contact ? ` (${contact})` : ""}\n` +
+        `Page: ${fromPage || "unknown"}\n\n${message.slice(0, 3000)}`;
       const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "content-type": "application/json" },

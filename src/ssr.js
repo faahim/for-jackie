@@ -120,6 +120,45 @@ function timelineHtml(timeline) {
     .join("");
 }
 
+// ---------- Wall of Love builders (mirror public/app.js — keep in sync) ----------
+
+function wallDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
+function wallNoteHtml(n) {
+  const when = wallDate(n.approvedAt);
+  return (
+    '<div class="wall-note"><p class="txt">' + esc(n.message) + "</p>" +
+    '<div class="who"><span>' + esc(n.name || "A friend of the nest") + "</span>" +
+    (when ? '<span class="date">' + esc(when) + "</span>" : "") +
+    "</div></div>"
+  );
+}
+
+/** Blank lines separate paragraphs; single newlines become soft breaks. */
+function storyParagraphs(text) {
+  return String(text)
+    .split(/\n\s*\n/)
+    .map((p) => "<p>" + esc(p.trim()).replace(/\n/g, "<br>") + "</p>")
+    .join("");
+}
+
+function storyHtml(s) {
+  const when = wallDate(s.approvedAt);
+  const meta = [s.from, when].filter(Boolean).join(" · ");
+  return (
+    '<article class="story">' +
+    '<div class="story-text">' + storyParagraphs(s.message) + "</div>" +
+    '<footer class="story-sig"><span class="story-name">' + esc(s.name || "A friend of the nest") + "</span>" +
+    (meta ? '<span class="story-meta">' + esc(meta) + "</span>" : "") +
+    (s.id ? '<a class="story-link" href="/wall/' + esc(s.id) + '">This story’s own page →</a>' : "") +
+    "</footer></article>"
+  );
+}
+
 function communityHtml(community) {
   return community
     .map(
@@ -328,9 +367,9 @@ export function jsonLdFor(page, c) {
   if (page === "wall") {
     graph.push(
       base("/wall", {
-        name: "Wall of Love — a moderated community guestbook for Jackie",
+        name: "Wall of Love — a moderated community memorial wall for Jackie",
         description:
-          "Notes of hope from Jackie's worldwide community. Every note is checked before it appears.",
+          "Notes and stories from Jackie's worldwide community — what she meant to the people who watched her. Everything is checked before it appears.",
       })
     );
   }
@@ -371,7 +410,7 @@ class InnerHtml {
  * Never throws into the response path: callers wrap in try/catch and fall
  * back to the untouched asset.
  */
-export function transformHtml(page, assetRes, c) {
+export function transformHtml(page, assetRes, c, wallEntries) {
   const rewriter = new HTMLRewriter();
 
   // Mark the document as server-rendered so app.js hydrates silently
@@ -436,6 +475,34 @@ export function transformHtml(page, assetRes, c) {
   if (page === "wall" && Array.isArray(c.community) && c.community.length) {
     rewriter.on("#community", { element(el) { el.removeAttribute("hidden"); } });
     rewriter.on("#community-list", new InnerHtml(communityHtml(c.community)));
+  }
+
+  // Wall page: server-render the approved notes and stories themselves so
+  // crawlers and no-JS visitors see the real wall (newest first), not
+  // skeleton placeholders. wallEntries comes straight from the wall:* KV list.
+  if (page === "wall" && Array.isArray(wallEntries)) {
+    const notes = [];
+    const stories = [];
+    for (const e of wallEntries) {
+      if (e.kind === "story") {
+        stories.push({
+          id: String(e.key || "").slice(-8),
+          name: e.name || null,
+          from: e.from || null,
+          message: e.message,
+          approvedAt: e.approvedAt,
+        });
+      } else {
+        notes.push({ name: e.name || null, message: e.message, approvedAt: e.approvedAt });
+      }
+    }
+    notes.reverse();
+    stories.reverse();
+    if (notes.length) rewriter.on("#wall", new InnerHtml(notes.map(wallNoteHtml).join("")));
+    if (stories.length) {
+      rewriter.on("#stories", { element(el) { el.removeAttribute("hidden"); } });
+      rewriter.on("#story-list", new InnerHtml(stories.map(storyHtml).join("")));
+    }
   }
 
   // JSON-LD: appended just before </head>. <-escape so "</script>" in
@@ -599,7 +666,7 @@ export function renderUpdatePage(found, c) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
-<link rel="stylesheet" href="/styles.css?v=10">
+<link rel="stylesheet" href="/styles.css?v=13">
 <link rel="canonical" href="${esc(url)}">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
@@ -714,7 +781,7 @@ ${bannerHtml}
   </button>
 </nav>
 
-<script src="/app.js?v=10" defer></script>
+<script src="/app.js?v=13" defer></script>
 </body>
 </html>
 `;
@@ -729,7 +796,7 @@ export function renderUpdate404() {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Update not found · For Jackie</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/styles.css?v=10">
+<link rel="stylesheet" href="/styles.css?v=13">
 </head>
 <body data-page="post">
 <main>
@@ -737,6 +804,196 @@ export function renderUpdate404() {
     <p class="eyebrow">Not found</p>
     <h1>That update isn't here</h1>
     <p class="intro">It may have been consolidated into another entry. Everything verified lives on one page: <a href="/updates">all verified updates</a>.</p>
+  </div>
+</main>
+</body>
+</html>
+`;
+}
+
+// ---------- story permalink pages (/wall/<hash8>) ----------
+
+/**
+ * A permanent, shareable page for one approved Wall of Love story. Same chrome
+ * as the other pages (strip, banner, nav, footer, tab bar, pre-paint script);
+ * app.js runs with data-page="story" and touches only banner + stamps.
+ * The words are the writer's own — rendered with care, never altered.
+ */
+export function renderStoryPage(story, id, c) {
+  const url = SITE + "/wall/" + id;
+  const who = story.name || "A friend of the nest";
+  const title = (story.name ? story.name + "’s story — For Jackie" : "A story for Jackie");
+  const desc = excerpt(story.message, 160);
+  const dateNice = story.approvedAt ? fmtDateUTC(story.approvedAt) : null;
+  const updatedNice = c && c.meta && c.meta.updatedAt ? fmtDateUTC(c.meta.updatedAt) : null;
+  const bannerHtml =
+    c && c.banner && c.banner.text
+      ? '<div class="alert-banner visible" id="alert-banner" role="status">' + esc(c.banner.text) + "</div>"
+      : '<div class="alert-banner" id="alert-banner" role="status"></div>';
+  const sigMeta = [story.from, dateNice].filter(Boolean).join(" · ");
+
+  const ld = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      ldWebsite(),
+      ldOrg(),
+      ldJackie(),
+      {
+        "@type": "WebPage",
+        "@id": url + "#webpage",
+        url,
+        name: title,
+        description: desc,
+        isPartOf: { "@id": SITE + "/#website" },
+        about: { "@id": SITE + "/#jackie" },
+        inLanguage: "en",
+        datePublished: story.approvedAt,
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "For Jackie", item: SITE + "/" },
+          { "@type": "ListItem", position: 2, name: "Wall of Love", item: SITE + "/wall" },
+          { "@type": "ListItem", position: 3, name: title, item: url },
+        ],
+      },
+    ],
+  }).replace(/</g, "\\u003c");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(desc)}">
+<link rel="stylesheet" href="/styles.css?v=13">
+<link rel="canonical" href="${esc(url)}">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:site_name" content="For Jackie">
+<meta property="og:type" content="article">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(desc)}">
+<meta property="og:url" content="${esc(url)}">
+<meta property="og:image" content="${SITE}/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script>${PREPAINT_SCRIPT}</script>
+<script type="application/ld+json">${ld}</script>
+</head>
+<body data-page="story" data-ssr="1">
+
+<div class="strip"><span class="strip-full">Community-run · <strong>Not affiliated</strong> with FOBBV or the Ojai Raptor Center · Every fact links to its source</span><span class="strip-mini">Community-run · <strong>Not affiliated</strong> · Sources linked</span></div>
+${bannerHtml}
+<script>(function () { var el = document.getElementById("alert-banner"); if (window.__fjBanner && el) { el.textContent = window.__fjBanner; el.classList.add("visible"); } })();</script>
+
+<nav class="topnav">
+  <div class="inner">
+    <a class="wordmark" href="/">For Jackie</a>
+    <div class="links">
+      <a href="/">Status</a>
+      <a href="/updates">Updates</a>
+      <a href="/wall" aria-current="page">Wall of Love</a>
+      <a href="/timeline">Timeline</a>
+      <a href="/rumors">Rumor Check</a>
+      <a href="/help">How to Help</a>
+    </div>
+    <span class="fresh" id="fresh">${updatedNice ? "updated " + esc(updatedNice) : "updated recently"}</span>
+  </div>
+</nav>
+<script>if (window.__fjFresh) document.getElementById("fresh").textContent = window.__fjFresh;</script>
+
+<main>
+  <article class="story-page">
+    <div class="page-head reveal">
+      <a class="backlink" href="/wall">← The Wall of Love</a>
+      <p class="eyebrow">A story for Jackie${dateNice ? " · shared " + esc(dateNice) : ""}</p>
+      <h1>${esc(story.name ? story.name + "’s story" : "A story for Jackie")}</h1>
+    </div>
+    <div class="story-body reveal">
+      ${storyParagraphs(story.message)}
+      <p class="story-close">— ${esc(who)}${sigMeta ? '<span class="story-meta"> · ' + esc(sigMeta) + "</span>" : ""}</p>
+    </div>
+  </article>
+
+  <section class="reveal">
+    <p class="eyebrow">The wall keeps growing</p>
+    <h2>More from the community</h2>
+    <div class="explore-grid">
+      ${exploreCard("/wall", "Wall of Love", "Read more, or add your own", "Notes and stories from the people who watched Jackie's nest, all over the world.")}
+      ${exploreCard("/timeline", "Her story", "The whole timeline", "From the nest above Big Bear Lake to the days the world watched and hoped.")}
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <main style="padding-bottom:0;">
+    <nav>
+      <a href="/about">About this page &amp; sources</a>
+      <a href="/wall">Wall of Love</a>
+      <a href="/timeline">Timeline</a>
+      <a rel="noopener" target="_blank" href="https://friendsofbigbearvalley.org/livestream/">Official FOBBV livestream</a>
+      <a rel="noopener" target="_blank" href="https://www.ojairaptorcenter.org/">Ojai Raptor Center</a>
+    </nav>
+    <p><strong>For Jackie</strong> is an unofficial, volunteer-made community resource — not affiliated with, endorsed by, or speaking for Friends of Big Bear Valley, the Ojai Raptor Center, or any agency involved in Jackie's care. When this page and an official source disagree, trust the official source.</p>
+    <p>Have a correction, a resource, an idea for the community — or just something on your heart? The keeper of this page would love to hear it. <button class="made-by" type="button" data-open-msg>Write to the keeper</button></p>
+    <p class="made-line">Made with love by <button class="made-by" type="button" data-open-msg>the keeper of this page</button> and the watchers of the nest. 🦅</p>
+  </main>
+</footer>
+
+<nav class="tabbar" aria-label="Primary">
+  <a href="/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+    Status
+  </a>
+  <a href="/updates">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M5 12h14M5 18h9"/></svg>
+    Updates
+  </a>
+  <a href="/wall" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.3-7-9.3C5 8 7 6 9.3 6c1.2 0 2.1.5 2.7 1.4C12.6 6.5 13.5 6 14.7 6 17 6 19 8 19 10.7c0 5-7 9.3-7 9.3z"/></svg>
+    Wall
+  </a>
+  <a href="/rumors">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M9.8 9.5a2.2 2.2 0 1 1 3.2 2c-.8.5-1 1-1 1.8"/><circle cx="12" cy="16.3" r="0.4" fill="currentColor"/></svg>
+    Rumors
+  </a>
+  <a href="/help">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.4"/><path stroke-linecap="round" d="M12 4v4.6M12 15.4V20M4 12h4.6M15.4 12H20"/></svg>
+    Help
+  </a>
+  <button class="more" type="button" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="8" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
+    More
+  </button>
+</nav>
+
+<script src="/app.js?v=13" defer></script>
+</body>
+</html>
+`;
+}
+
+/** Small, honest 404 for unknown story ids — noindex, links back to the wall. */
+export function renderStory404() {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story not found · For Jackie</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/styles.css?v=13">
+</head>
+<body data-page="story">
+<main>
+  <div class="page-head">
+    <p class="eyebrow">Not found</p>
+    <h1>That story isn't here</h1>
+    <p class="intro">It may have been taken down at its writer's request. The wall itself is always open: <a href="/wall">the Wall of Love</a>.</p>
   </div>
 </main>
 </body>

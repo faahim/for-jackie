@@ -408,11 +408,46 @@
     );
   }
 
+  // Blank lines separate paragraphs; single newlines become soft breaks.
+  // Keep mirrored with storyParagraphs in src/ssr.js.
+  function storyParagraphs(text) {
+    return String(text)
+      .split(/\n\s*\n/)
+      .map(function (p) { return "<p>" + esc(p.trim()).replace(/\n/g, "<br>") + "</p>"; })
+      .join("");
+  }
+
+  // Keep mirrored with storyHtml in src/ssr.js.
+  function storyHtml(s) {
+    var d = new Date(s.approvedAt);
+    var when = isNaN(d) ? "" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    var meta = [s.from, when].filter(Boolean).join(" · ");
+    return (
+      '<article class="story">' +
+      '<div class="story-text">' + storyParagraphs(s.message) + "</div>" +
+      '<footer class="story-sig"><span class="story-name">' + esc(s.name || "A friend of the nest") + "</span>" +
+      (meta ? '<span class="story-meta">' + esc(meta) + "</span>" : "") +
+      (s.id ? '<a class="story-link" href="/wall/' + esc(s.id) + '">This story’s own page →</a>' : "") +
+      "</footer></article>"
+    );
+  }
+
   function setupWall() {
     var wallEl = document.getElementById("wall");
     if (!wallEl) return;
-    var WALL_CACHE = "fj:wall:v1";
+    var WALL_CACHE = "fj:wall:v2";
+    var ssr = document.body.hasAttribute("data-ssr"); // real content already visible
     var lastNotes = null; // serialized form of what's rendered
+    var storiesSection = document.getElementById("stories");
+    var storyList = document.getElementById("story-list");
+    var lastStories = null;
+
+    function renderStories(stories, mode) {
+      if (!storiesSection || !storyList) return;
+      if (!stories || !stories.length) { storiesSection.hidden = true; return; }
+      storiesSection.hidden = false;
+      setHtml(storyList, stories.map(storyHtml).join(""), mode);
+    }
 
     function renderWall(notes, mode) {
       var html = notes.length
@@ -432,11 +467,13 @@
       }
     }
 
-    var cachedNotes = null;
-    try { cachedNotes = JSON.parse(localStorage.getItem(WALL_CACHE)); } catch (e) { /* fine */ }
-    if (cachedNotes && Array.isArray(cachedNotes)) {
-      renderWall(cachedNotes, "cache"); // synchronous, silent — before first paint
-      lastNotes = JSON.stringify(cachedNotes);
+    var cachedWall = null;
+    try { cachedWall = JSON.parse(localStorage.getItem(WALL_CACHE)); } catch (e) { /* fine */ }
+    if (cachedWall && Array.isArray(cachedWall.notes)) {
+      renderWall(cachedWall.notes, "cache"); // synchronous, silent — before first paint
+      lastNotes = JSON.stringify(cachedWall.notes);
+      renderStories(cachedWall.stories || [], "cache");
+      lastStories = JSON.stringify(cachedWall.stories || []);
     }
 
     function loadWall() {
@@ -447,16 +484,26 @@
         })
         .then(function (data) {
           if (!data || !Array.isArray(data.notes)) return;
+          var stories = Array.isArray(data.stories) ? data.stories : [];
+          try {
+            localStorage.setItem(WALL_CACHE, JSON.stringify({ notes: data.notes, stories: stories }));
+          } catch (e) { /* fine */ }
           var sig = JSON.stringify(data.notes);
-          try { localStorage.setItem(WALL_CACHE, sig); } catch (e) { /* fine */ }
           if (sig !== lastNotes) {
-            renderWall(data.notes, lastNotes === null ? "enter" : "update");
+            // Server-rendered pages already show the real wall — first live
+            // render stays silent instead of replaying the entrance.
+            renderWall(data.notes, lastNotes === null ? (ssr ? "cache" : "enter") : "update");
             lastNotes = sig;
+          }
+          var storySig = JSON.stringify(stories);
+          if (storySig !== lastStories) {
+            renderStories(stories, lastStories === null ? (ssr ? "cache" : "enter") : "update");
+            lastStories = storySig;
           }
         })
         .catch(function (err) {
           console.log("wall load failed", err);
-          if (lastNotes === null) {
+          if (lastNotes === null && !ssr) {
             renderWall([], "enter"); // clear the skeletons; show the invitation
             lastNotes = "[]";
           }
@@ -467,30 +514,82 @@
       if (!document.hidden) loadWall();
     });
 
-    // ---- submission: pending until a volunteer approves, and the form says so ----
+    // ---- submission: pending until approved, and the form says so ----
+    // Two modes share one form: a short note (500) or a long-form story (2500)
+    // that earns its own permanent /wall/<id> page once approved.
     var form = document.getElementById("wall-form");
     if (!form) return;
     var counter = document.getElementById("wall-count");
-    if (counter) {
-      form.elements.message.addEventListener("input", function () {
-        var len = form.elements.message.value.length;
-        var text = len + " / 500";
-        if (counter.textContent !== text) counter.textContent = text;
-      });
+    var MODE = {
+      note: {
+        max: 500,
+        rows: 4,
+        hint: "A few kind words for the wall — a line or two is plenty.",
+        label: "Your note",
+        consent: "My note may be displayed publicly on this page.",
+        submit: "Add my note",
+        doneExtra: "Come back soon; the wall grows a little every day.",
+      },
+      story: {
+        max: 2500,
+        rows: 9,
+        hint: "Take your time. What did she mean to you? Approved stories get a permanent page of their own — a link you can keep and share.",
+        label: "Your story",
+        consent: "My story may be displayed publicly, on this page and on a page of its own.",
+        submit: "Share my story",
+        doneExtra: "Once it's approved, your story will appear under Stories with a permanent page of its own.",
+      },
+    };
+    function mode() {
+      var picked = form.querySelector('input[name="mode"]:checked');
+      return picked && picked.value === "story" ? "story" : "note";
     }
+    function syncCounter() {
+      if (!counter) return;
+      var text = form.elements.message.value.length + " / " + MODE[mode()].max;
+      if (counter.textContent !== text) counter.textContent = text;
+    }
+    function applyMode() {
+      var m = MODE[mode()];
+      var story = mode() === "story";
+      setText(document.getElementById("mode-hint"), m.hint);
+      setText(document.getElementById("msg-lbl"), m.label);
+      setText(document.getElementById("consent-txt"), m.consent);
+      var submitBtn = document.getElementById("wall-submit");
+      if (submitBtn && !submitBtn.disabled) submitBtn.textContent = m.submit;
+      var fromField = document.getElementById("from-field");
+      if (fromField) fromField.hidden = !story;
+      form.elements.message.maxLength = m.max;
+      form.elements.message.rows = m.rows;
+      syncCounter();
+    }
+    Array.prototype.slice.call(form.querySelectorAll('input[name="mode"]')).forEach(function (r) {
+      r.addEventListener("change", applyMode);
+    });
+    applyMode();
+    form.elements.message.addEventListener("input", syncCounter);
+
     form.addEventListener("submit", function (e) {
       e.preventDefault();
+      var m = mode();
       var errorEl = form.querySelector(".msg-error");
-      var submit = form.querySelector('button[type="submit"]');
+      var submit = document.getElementById("wall-submit");
       var message = form.elements.message.value.trim();
       if (!message) {
-        errorEl.textContent = "Please write a note first — even a few words are plenty.";
+        errorEl.textContent = m === "story"
+          ? "Please write your story first — it doesn't have to be long."
+          : "Please write a note first — even a few words are plenty.";
         errorEl.hidden = false;
         form.elements.message.focus();
         return;
       }
+      if (m === "note" && message.length > 500) {
+        errorEl.textContent = "That's longer than a note — switch to “Your story” and it can be up to 2,500 characters.";
+        errorEl.hidden = false;
+        return;
+      }
       if (!form.elements.consent.checked) {
-        errorEl.textContent = "Please tick the box confirming your note may be displayed publicly.";
+        errorEl.textContent = "Please tick the box confirming your words may be displayed publicly.";
         errorEl.hidden = false;
         form.elements.consent.focus();
         return;
@@ -498,17 +597,19 @@
       errorEl.hidden = true;
       submit.disabled = true;
       submit.textContent = "Sending…";
+      var payload = {
+        kind: m,
+        name: form.elements.name.value.trim(),
+        message: message,
+        consent: true,
+        website: form.elements.website.value,
+        page: page,
+      };
+      if (m === "story") payload.from = form.elements.from.value.trim();
       fetch("/api/messages", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          kind: "note",
-          name: form.elements.name.value.trim(),
-          message: message,
-          consent: true,
-          website: form.elements.website.value,
-          page: page,
-        }),
+        body: JSON.stringify(payload),
       })
         .then(function (res) {
           return res.json().then(function (data) { return { ok: res.ok && data.ok !== false, data: data }; });
@@ -518,6 +619,7 @@
             form.hidden = true;
             var done = document.querySelector(".wall-done");
             if (done) done.hidden = false;
+            setText(document.getElementById("done-extra"), MODE[m].doneExtra);
           } else {
             errorEl.textContent = result.data.error || "Something went wrong — please try again.";
             errorEl.hidden = false;
@@ -529,7 +631,7 @@
         })
         .then(function () {
           submit.disabled = false;
-          submit.textContent = "Add my note";
+          submit.textContent = MODE[mode()].submit;
         });
     });
   }
@@ -547,11 +649,11 @@
       sec.hidden = false;
       setHtml(list, notes.slice(0, 3).map(wallNoteHtml).join(""), mode);
     }
-    var cachedNotes = null;
-    try { cachedNotes = JSON.parse(localStorage.getItem("fj:wall:v1")); } catch (e) { /* fine */ }
-    if (cachedNotes && Array.isArray(cachedNotes)) {
-      show(cachedNotes, "cache"); // synchronous — zero-CLS on warm loads
-      lastSig = JSON.stringify(cachedNotes);
+    var cachedWall = null;
+    try { cachedWall = JSON.parse(localStorage.getItem("fj:wall:v2")); } catch (e) { /* fine */ }
+    if (cachedWall && Array.isArray(cachedWall.notes)) {
+      show(cachedWall.notes, "cache"); // synchronous — zero-CLS on warm loads
+      lastSig = JSON.stringify(cachedWall.notes);
     }
     fetch("/api/wall", { cache: "no-store" })
       .then(function (res) {
@@ -560,8 +662,13 @@
       })
       .then(function (data) {
         if (!data || !Array.isArray(data.notes)) return;
+        try {
+          localStorage.setItem(
+            "fj:wall:v2",
+            JSON.stringify({ notes: data.notes, stories: Array.isArray(data.stories) ? data.stories : [] })
+          );
+        } catch (e) { /* fine */ }
         var sig = JSON.stringify(data.notes);
-        try { localStorage.setItem("fj:wall:v1", sig); } catch (e) { /* fine */ }
         if (sig !== lastSig) {
           show(data.notes, lastSig === null ? "enter" : "update");
           lastSig = sig;

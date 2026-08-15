@@ -60,11 +60,13 @@
   --surface: #FBFCFB;
   --surface-2: #E9EEEB;
   --ink: #1D2B25;
-  --muted: #5C6B64;
+  --ink-soft: #45524C;    /* content prose: darker than --muted, calmer than --ink */
+  --muted: #5C6B64;       /* metadata only — timestamps, counters, captions */
   --line: #D5DED9;
   --lake: #2F6D74;
   --lake-soft: #E1EBEC;
-  --gold: #A87E1F;
+  --gold: #8C6819;        /* text-safe gold: ≥4.5:1 on ground & surface */
+  --danger: #8F4430;      /* error text — errors are never gold */
   --gold-graphic: #C89A2B;
   --stable: #3E7A54;
   --stable-soft: #E3EEE7;
@@ -88,6 +90,9 @@
      gets self-hosted Cabin — deliberate: consistent over per-OS Segoe. */
   --body: Seravek, "Gill Sans", "Gill Sans MT", "Cabin", "Cabin-fallback", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  /* tracking tokens: one voice for data labels, one for kickers */
+  --track-label: 0.08em;
+  --track-eyebrow: 0.14em;
   /* motion tokens (transitions.dev) */
   --duration-stagger: 40ms;
   --duration-quick: 150ms;
@@ -103,11 +108,13 @@
     --surface: #17201B;
     --surface-2: #1D2822;
     --ink: #E6ECE8;
+    --ink-soft: #C2CDC6;
     --muted: #93A39B;
     --line: #263229;
     --lake: #7BB8BE;
     --lake-soft: #1A2A2C;
     --gold: #D9AE4B;
+    --danger: #E29A85;
     --gold-graphic: #D9AE4B;
     --stable: #74C094;
     --stable-soft: #17281E;
@@ -147,7 +154,9 @@ nav.tabbar { view-transition-name: tabbar; }
 ::view-transition-old(alert-banner), ::view-transition-new(alert-banner) { animation-duration: 0ms; }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+/* [hidden] must always win, even over classes that set display */
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--ground);
@@ -174,7 +183,7 @@ p, li { text-wrap: pretty; }
   text-align: center;
   padding: 0.5rem 1rem;
   font-size: 0.68rem;
-  letter-spacing: 0.13em;
+  letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
   font-family: var(--mono);
 }
@@ -182,7 +191,7 @@ p, li { text-wrap: pretty; }
 .strip .strip-mini { display: none; }
 @media (max-width: 719px) {
   /* one compact line on phones — the disclaimer stays, the bulk goes */
-  .strip { padding: 0.32rem 0.75rem; font-size: 0.58rem; letter-spacing: 0.11em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .strip { padding: 0.34rem 0.75rem; font-size: 0.64rem; letter-spacing: 0.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .strip .strip-full { display: none; }
   .strip .strip-mini { display: inline; }
 }
@@ -202,9 +211,9 @@ p, li { text-wrap: pretty; }
   /* A four-line centered banner reads as a wall on phones: left-align it,
      tighten the type, and let it sit as content rather than a shout. */
   .alert-banner {
-    font-size: 0.76rem;
-    line-height: 1.45;
-    padding: 0.5rem 0.95rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    padding: 0.55rem 0.95rem;
     font-weight: 500;
     text-align: left;
   }
@@ -259,7 +268,7 @@ p, li { text-wrap: pretty; }
   color: var(--muted);
   text-decoration: none;
   font-size: 0.78rem;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   padding: 0.32rem 0.8rem;
   border-radius: 999px;
@@ -336,7 +345,7 @@ p, li { text-wrap: pretty; }
   text-decoration: none;
   color: var(--muted);
   font-size: 0.66rem;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   padding: 0.35rem 0;
   border-radius: 16px; /* concentric with the 22px dock (padding ≈ 6px) */
@@ -356,22 +365,22 @@ main { max-width: 780px; margin: 0 auto; padding: 0 1.25rem 4rem; }
 section { padding: 2.6rem 0 0.5rem; }
 
 /* breathing room between a section heading and what follows it */
-section h2 { margin-bottom: 1.15rem; }
+section h2 { font-size: 1.6rem; margin-bottom: 1.15rem; }
 section h2 + .section-intro { margin-top: -0.55rem; }
 
 .page-head { padding: 2.6rem 0 0; }
 .page-head h1 { font-size: clamp(1.9rem, 5.5vw, 2.6rem); font-weight: 500; }
-.page-head .intro { color: var(--muted); max-width: 60ch; margin: 0.8rem 0 0; }
+.page-head .intro { color: var(--ink-soft); max-width: 60ch; margin: 0.8rem 0 0; }
 
 .eyebrow {
   font-family: var(--mono);
   font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
   color: var(--gold);
   margin: 0 0 0.6rem;
 }
-.section-intro { color: var(--muted); max-width: 60ch; margin: 0.4rem 0 1.6rem; }
+.section-intro { color: var(--ink-soft); max-width: 60ch; margin: 0.4rem 0 1.6rem; }
 
 /* ---- hero (home) ---- */
 .hero { padding: 3.2rem 0 1rem; }
@@ -388,7 +397,7 @@ section h2 + .section-intro { margin-top: -0.55rem; }
 }
 .hero h1 { font-size: clamp(2.2rem, 6.2vw, 3.3rem); font-weight: 500; }
 .hero h1 em { font-style: italic; color: var(--stable); }
-.hero .lede { font-size: 1.2rem; max-width: 58ch; color: var(--muted); margin: 1.3rem 0 0; min-height: 6.8em; /* ≈4 lines: reserves the summary's space on cold loads */ }
+.hero .lede { font-size: 1.2rem; max-width: 58ch; color: var(--ink-soft); margin: 1.3rem 0 0; min-height: 6.8em; /* ≈4 lines: reserves the summary's space on cold loads */ }
 /* longest: "Checked 59 min ago · latest update Wednesday at 12:41 PM" */
 .hero .stamp .mono { min-width: min(56ch, 100%); }
 @media (max-width: 719px) {
@@ -413,7 +422,7 @@ section h2 + .section-intro { margin-top: -0.55rem; }
   flex: 1 1 180px;
   min-width: 170px;
 }
-.chip .who { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.chip .who { font-size: 0.72rem; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); }
 .chip .state { font-weight: 600; font-size: 0.98rem; }
 .chip.stable .state { color: var(--stable); }
 .chip.lake .state { color: var(--lake); }
@@ -439,7 +448,7 @@ section h2 + .section-intro { margin-top: -0.55rem; }
   gap: 0.55rem;
   font-family: var(--mono);
   font-size: 0.72rem;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 0.35rem;
@@ -448,19 +457,19 @@ section h2 + .section-intro { margin-top: -0.55rem; }
 .update .tone-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lake); }
 .update.good .tone-dot { background: var(--stable); }
 .update.concern .tone-dot { background: var(--gold-graphic); }
-.update h3 { font-size: 1.28rem; margin-bottom: 0.4rem; }
-.update p { margin: 0 0 0.6rem; color: var(--muted); font-size: 1.05rem; max-width: 62ch; }
+.update h3 { font-size: 1.28rem; line-height: 1.3; margin-bottom: 0.4rem; }
+.update p { margin: 0 0 0.6rem; color: var(--ink-soft); font-size: 1.05rem; max-width: 62ch; }
 .update .srcs { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
 .src {
   font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.03em;
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
   color: var(--lake);
   text-decoration: none;
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 0.1rem 0.55rem;
+  padding: 0.28rem 0.7rem;
   white-space: nowrap;
   transition: border-color var(--duration-fast) var(--ease-smooth-out),
               background-color var(--duration-fast) var(--ease-smooth-out);
@@ -476,9 +485,9 @@ section h2 + .section-intro { margin-top: -0.55rem; }
 /* ---- known / unknown ---- */
 .two-col { display: grid; grid-template-columns: 1fr; gap: 2.2rem; }
 @media (min-width: 640px) { .two-col { grid-template-columns: 3fr 2fr; } }
-.two-col h3 { font-size: 1.15rem; margin-bottom: 0.9rem; }
+.two-col h3 { font-size: 1.15rem; line-height: 1.3; margin-bottom: 0.9rem; }
 .unknown-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.55rem; }
-.unknown-list li { padding-left: 1.3rem; position: relative; color: var(--muted); max-width: 62ch; }
+.unknown-list li { padding-left: 1.3rem; position: relative; color: var(--ink-soft); max-width: 62ch; }
 .unknown-list li::before {
   content: "?";
   position: absolute;
@@ -514,7 +523,7 @@ section h2 + .section-intro { margin-top: -0.55rem; }
 }
 .explore-card .eyebrow { margin: 0 0 0.1rem; }
 .explore-card .title { font-family: var(--display); font-size: 1.28rem; line-height: 1.25; text-wrap: balance; }
-.explore-card .desc { color: var(--muted); font-size: 1rem; }
+.explore-card .desc { color: var(--ink-soft); font-size: 1rem; }
 .explore-card .go {
   position: absolute;
   top: 1.1rem; right: 1.1rem;
@@ -539,6 +548,7 @@ section h2 + .section-intro { margin-top: -0.55rem; }
   font-family: var(--display);
   font-style: italic;
   font-size: 1.12rem;
+  line-height: 1.3;
   border-bottom: 1px dashed var(--line);
 }
 .rumor .claim::before { content: "\201C"; color: var(--muted); }
@@ -548,8 +558,8 @@ section h2 + .section-intro { margin-top: -0.55rem; }
 .tag {
   display: inline-block;
   font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
+  font-size: 0.74rem;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   border-radius: 4px;
   padding: 0.14rem 0.5rem;
@@ -567,7 +577,7 @@ section h2 + .section-intro { margin-top: -0.55rem; }
   padding-left: 1.4rem;
   font-family: var(--mono);
   font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
   color: var(--gold);
 }
@@ -585,9 +595,9 @@ section h2 + .section-intro { margin-top: -0.55rem; }
 }
 .timeline .event.crisis::before { background: var(--gold-graphic); }
 .timeline .event.hope::before { background: var(--stable); }
-.timeline .date { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.05em; color: var(--muted); display: block; margin-bottom: 0.15rem; font-variant-numeric: tabular-nums; }
-.timeline h3 { font-size: 1.16rem; margin: 0 0 0.25rem; }
-.timeline p { margin: 0; color: var(--muted); font-size: 1.02rem; max-width: 56ch; }
+.timeline .date { font-family: var(--mono); font-size: 0.74rem; letter-spacing: var(--track-label); color: var(--muted); display: block; margin-bottom: 0.15rem; font-variant-numeric: tabular-nums; }
+.timeline h3 { font-size: 1.16rem; line-height: 1.3; margin: 0 0 0.25rem; }
+.timeline p { margin: 0; color: var(--ink-soft); font-size: 1.02rem; max-width: 56ch; }
 
 /* ---- help cards ---- */
 .help-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
@@ -603,8 +613,8 @@ section h2 + .section-intro { margin-top: -0.55rem; }
   gap: 0.5rem;
 }
 .help-card.primary { border-color: var(--stable); border-width: 1.5px; }
-.help-card h3 { font-size: 1.18rem; }
-.help-card p { margin: 0; font-size: 1rem; color: var(--muted); flex: 1; }
+.help-card h3 { font-size: 1.18rem; line-height: 1.3; }
+.help-card p { margin: 0; font-size: 1rem; color: var(--ink-soft); flex: 1; }
 .btn {
   display: inline-block;
   align-self: flex-start;
@@ -629,12 +639,12 @@ section h2 + .section-intro { margin-top: -0.55rem; }
 .dont h3 {
   font-family: var(--mono);
   font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
   color: var(--gold);
   margin-bottom: 0.6rem;
 }
-.dont ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 1rem; }
+.dont ul { margin: 0; padding-left: 1.1rem; color: var(--ink-soft); font-size: 1rem; }
 .dont li { margin-bottom: 0.35rem; }
 
 /* ---- note (community) ---- */
@@ -656,7 +666,7 @@ footer.site {
   border-top: 1px solid var(--line);
   margin-top: 3.2rem;
   padding: 1.8rem 0 0;
-  color: var(--muted);
+  color: var(--ink-soft);
   font-size: 0.98rem;
 }
 footer.site p { max-width: 62ch; margin: 0 0 0.8rem; }
@@ -779,7 +789,7 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
   transition-duration: 180ms;
 }
 .msg-panel h3 { font-size: 1.4rem; margin-bottom: 0.5rem; }
-.msg-panel .msg-intro { color: var(--muted); font-size: 1rem; margin: 0 0 1.2rem; max-width: 48ch; }
+.msg-panel .msg-intro { color: var(--ink-soft); font-size: 1rem; margin: 0 0 1.2rem; max-width: 48ch; }
 .msg-x {
   position: absolute;
   top: 0.55rem; right: 0.55rem;
@@ -801,7 +811,7 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
   display: block;
   font-family: var(--mono);
   font-size: 0.7rem;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 0.3rem;
@@ -824,7 +834,7 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
 }
 .msg-field textarea { min-height: 7rem; resize: vertical; }
 .hp { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
-.msg-error { color: var(--gold); font-size: 0.95rem; margin: 0 0 0.8rem; }
+.msg-error { color: var(--danger); font-size: 0.95rem; margin: 0 0 0.8rem; }
 .msg-actions { display: flex; gap: 0.6rem; align-items: center; }
 .msg-done p { margin: 0 0 0.8rem; max-width: 48ch; }
 .msg-done p:first-child { color: var(--stable); }
@@ -893,20 +903,127 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
   justify-content: space-between;
   align-items: baseline;
   gap: 0.8rem;
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  /* a signature, not a log entry: italic serif for the person, mono for the date */
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 0.95rem;
   color: var(--muted);
+}
+.wall-note .who .date {
+  flex: none;
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 0.7rem;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
   font-variant-numeric: tabular-nums;
 }
-.wall-note .who .date { flex: none; }
-.wall-empty { background: var(--surface-2); border-radius: 12px; padding: 1.5rem 1.5rem 1.6rem; color: var(--muted); }
+.wall-empty { background: var(--surface-2); border-radius: 12px; padding: 1.5rem 1.5rem 1.6rem; color: var(--ink-soft); }
 .wall-empty p { margin: 0; max-width: 48ch; }
 /* gentle staggered entrance on cold load only (JS sets per-card delays);
    transform-based, so card positions/heights never shift layout */
 .wall-stagger .wall-note { animation: wall-in 400ms var(--ease-smooth-out) both; }
 @keyframes wall-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* ---- note/story composer: mode switch ---- */
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.mode-pick {
+  display: inline-flex;
+  gap: 4px;
+  margin: 0 0 0.8rem;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--ground);
+}
+.mode-pick .mode { cursor: pointer; }
+.mode-pick input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.mode-pick .mode span {
+  display: inline-block;
+  padding: 0.34rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color var(--duration-fast) var(--ease-smooth-out),
+              background-color var(--duration-fast) var(--ease-smooth-out);
+}
+.mode-pick input:checked + span { background: var(--pill-bg); color: var(--pill-text); }
+.mode-pick input:focus-visible + span { outline: 2px solid var(--lake); outline-offset: 2px; }
+.mode-hint { color: var(--ink-soft); font-size: 0.98rem; margin: 0 0 1.1rem; max-width: 52ch; }
+
+/* ---- stories: open, editorial, hairline-separated — a person's words in serif ---- */
+#story-list .story { padding: 1.9rem 0 1.6rem; border-top: 1px solid var(--line); }
+#story-list .story:first-child { border-top: 0; padding-top: 0.3rem; }
+.story-text { max-width: 62ch; }
+.story-text p {
+  font-family: var(--display);
+  font-size: 1.125rem;
+  line-height: 1.7;
+  margin: 0 0 1em;
+}
+.story-text p:last-child { margin-bottom: 0; }
+.story-sig {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 1rem;
+  margin-top: 1.1rem;
+  max-width: 62ch;
+}
+.story-name { font-family: var(--display); font-style: italic; font-size: 1.02rem; color: var(--ink-soft); }
+.story-meta {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.story-link {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--lake);
+  white-space: nowrap;
+}
+.story-link:hover, .story-link:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 559px) { .story-link { margin-left: 0; flex-basis: 100%; } }
+
+/* ---- story permalink pages (/wall/<id>) ---- */
+.story-page .page-head h1 { max-width: 24ch; text-wrap: balance; }
+.story-body { max-width: 62ch; margin-top: 1.6rem; }
+.story-body p {
+  font-family: var(--display);
+  font-size: 1.17rem;
+  line-height: 1.7;
+  margin: 0 0 1.05em;
+}
+.story-close {
+  margin-top: 1.7rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--line);
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+}
+.story-close .story-meta { font-style: normal; }
 
 .community-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 @media (min-width: 640px) { .community-grid { grid-template-columns: 1fr 1fr; } }
@@ -1032,7 +1149,7 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
   display: inline-block;
   font-family: var(--mono);
   font-size: 0.82rem;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--muted);
   text-decoration: none;
@@ -1045,22 +1162,26 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
 .post.good .post-when .tone-dot { background: var(--stable); }
 .post.concern .post-when .tone-dot { background: var(--gold-graphic); }
 .post-body { max-width: 62ch; margin-top: 1.5rem; }
-.post-body p { font-size: 1.13rem; line-height: 1.85; margin: 0 0 1.1rem; }
+.post-body p { font-size: 1.13rem; line-height: 1.75; margin: 0 0 1.1rem; }
 .post-body .srcs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.3rem; }
 @media (max-width: 479px) {
-  .post-body p { font-size: 1.04rem; line-height: 1.8; }
+  /* never below the site's base body size — phones are where reading happens */
+  .post-body p { font-size: 1.0625rem; line-height: 1.7; }
 }
 
-/* ---- mobile typography tuning (<480px): calmer measure, more air ---- */
+/* ---- mobile typography tuning (<480px): calmer measure, more air ----
+   Reading text never drops below the base body size on phones; only the
+   display scale steps down (28.8 → 24 → 20 → 18px: committed 1.2 ratios). */
 @media (max-width: 479px) {
   body { line-height: 1.75; }
   .hero h1 { font-size: 2.05rem; }
   .page-head h1 { font-size: 1.8rem; }
-  section h2 { font-size: 1.42rem; }
-  .hero .lede, .page-head .intro { font-size: 1.05rem; line-height: 1.8; }
-  .section-intro { font-size: 1.02rem; line-height: 1.75; }
-  .update h3 { font-size: 1.2rem; }
-  .update p { font-size: 1.02rem; }
+  section h2 { font-size: 1.5rem; }
+  .hero .lede, .page-head .intro { font-size: 1.0625rem; line-height: 1.75; }
+  .section-intro { font-size: 1.0625rem; line-height: 1.7; }
+  .update h3 { font-size: 1.25rem; }
+  .update p { font-size: 1.0625rem; }
+  .story-text p, .story-body p { font-size: 1.0625rem; }
 }
 
 /* ---- calm for those who asked for it ---- */
@@ -1073,7 +1194,7 @@ html.js .reveal:not(.is-in) { animation: reveal-net 400ms var(--ease-smooth-out)
   html.js .reveal { opacity: 1; translate: none; transition: none; animation: none; }
   .explore-card, .explore-card .go, .btn, .src, .dock-pill,
   .topnav .links a, .tabbar a, .tabbar .more, .msg-overlay, .msg-panel,
-  .sheet, .sheet-overlay { transition: none; }
+  .sheet, .sheet-overlay, .mode-pick .mode span { transition: none; }
   .btn:active { scale: none; }
   ::view-transition-group(*),
   ::view-transition-image-pair(*),

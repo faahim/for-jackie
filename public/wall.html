@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wall of Love — For Jackie</title>
-<meta name="description" content="A moderated community guestbook for Jackie the Big Bear bald eagle — leave a note of hope, read the community's light, and find wonderful things the nest family inspired.">
-<link rel="stylesheet" href="/styles.css?v=11">
+<meta name="description" content="A moderated community memorial wall for Jackie, the Big Bear bald eagle — leave a note, share the story of what she meant to you, and read the community's light.">
+<link rel="stylesheet" href="/styles.css?v=13">
 <link rel="canonical" href="https://forjackie.org/wall">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
@@ -13,7 +13,7 @@
 <meta property="og:site_name" content="For Jackie">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Wall of Love — For Jackie">
-<meta property="og:description" content="A moderated community guestbook for Jackie the Big Bear bald eagle — leave a note of hope, read the community's light, and find wonderful things the nest family inspired.">
+<meta property="og:description" content="A moderated community memorial wall for Jackie, the Big Bear bald eagle — leave a note, share the story of what she meant to you, and read the community's light.">
 <meta property="og:url" content="https://forjackie.org/wall">
 <meta property="og:image" content="https://forjackie.org/og-card.png">
 <meta property="og:image:width" content="1200">
@@ -87,32 +87,44 @@ document.documentElement.classList.add("js");
   <div class="page-head reveal">
     <p class="eyebrow">From all of us</p>
     <h1>The Wall of Love</h1>
-    <p class="intro">A place to leave a little light for Jackie, Shadow, Sandy, Luna, and each other. Every note here was written by someone who watches the nest, and checked before it appeared, so the wall stays as kind as the community it comes from.</p>
+    <p class="intro">A place to remember Jackie, and to hold one another. Leave a few words, or tell the whole story of what she meant to you — every word here was written by someone who watched the nest, and checked before it appeared, so the wall stays as kind as the community it comes from.</p>
   </div>
 
   <section class="reveal">
-    <p class="eyebrow">Add your voice</p>
-    <h2>Leave a note</h2>
+    <h2>Leave a note, or tell your story</h2>
     <div class="note-card">
       <form id="wall-form" novalidate>
+        <fieldset class="mode-pick" id="wall-mode">
+          <legend class="visually-hidden">What would you like to share?</legend>
+          <label class="mode"><input type="radio" name="mode" value="note" checked><span>A short note</span></label>
+          <label class="mode"><input type="radio" name="mode" value="story"><span>Your story</span></label>
+        </fieldset>
+        <p class="mode-hint" id="mode-hint">A few kind words for the wall — a line or two is plenty.</p>
         <label class="msg-field"><span class="lbl">Your name <em>· optional</em></span>
         <input name="name" maxlength="60" autocomplete="name"></label>
-        <label class="msg-field"><span class="lbl lbl-row">Your note <span class="counter" id="wall-count" aria-hidden="true">0 / 500</span></span>
+        <label class="msg-field" id="from-field" hidden><span class="lbl">Where you watched from <em>· optional</em></span>
+        <input name="from" maxlength="80" placeholder="Ohio · watching since the 2023 snowstorm"></label>
+        <label class="msg-field"><span class="lbl lbl-row"><span id="msg-lbl">Your note</span> <span class="counter" id="wall-count" aria-hidden="true">0 / 500</span></span>
         <textarea name="message" maxlength="500" required rows="4"></textarea></label>
         <label class="hp" aria-hidden="true">Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label>
-        <label class="consent"><input type="checkbox" name="consent"><span>My note may be displayed publicly on this page.</span></label>
+        <label class="consent"><input type="checkbox" name="consent"><span id="consent-txt">My note may be displayed publicly on this page.</span></label>
         <p class="msg-error" hidden></p>
-        <button type="submit" class="btn">Add my note</button>
+        <button type="submit" class="btn" id="wall-submit">Add my note</button>
       </form>
       <div class="wall-done" hidden>
-        <p><strong>Thank you.</strong> Every note is checked before it appears — usually within a day.</p>
-        <p>Come back soon; the wall grows a little every day.</p>
+        <p><strong>Thank you.</strong> Everything on the wall is checked before it appears — usually within a day.</p>
+        <p id="done-extra">Come back soon; the wall grows a little every day.</p>
       </div>
     </div>
   </section>
 
+  <section class="reveal" id="stories" hidden>
+    <h2>What she meant to us</h2>
+    <p class="section-intro">Longer memories from the people who watched her, in their own words. Each story has a permanent page of its own, made to be kept and shared.</p>
+    <div id="story-list"></div>
+  </section>
+
   <section class="reveal">
-    <p class="eyebrow">The wall</p>
     <h2>Notes from the community</h2>
     <div class="wall" id="wall">
       <div class="skel-card" aria-hidden="true"><span class="skel-bar w95"></span><span class="skel-bar w80"></span><span class="skel-bar w30"></span></div>
@@ -123,7 +135,6 @@ document.documentElement.classList.add("js");
   </section>
 
   <section class="reveal" id="community" hidden>
-    <p class="eyebrow">From the community</p>
     <h2>Wonderful things the nest inspired</h2>
     <p class="section-intro">Art, words, and kindness made by this community and shared publicly, gathered here with credit and a link to the original.</p>
     <div class="community-grid" id="community-list"></div>
@@ -171,6 +182,6 @@ document.documentElement.classList.add("js");
   </button>
 </nav>
 
-<script src="/app.js?v=11" defer></script>
+<script src="/app.js?v=13" defer></script>
 </body>
 </html>
