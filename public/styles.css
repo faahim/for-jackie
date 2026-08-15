@@ -409,24 +409,98 @@ section h2 + .section-intro { margin-top: -0.55rem; }
   .hero .stamp .mono { min-width: 0; font-size: 0.7em; line-height: 1.6; text-wrap: balance; }
 }
 
-.chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.7rem; min-height: 4.6rem; }
+/* Statuses render as a compact field ledger, not cards — the states are
+   full sentences now (the verification agent writes real summaries), and
+   card-chips ballooned into the page's biggest block. Tone lives in the
+   dot beside the name; the state itself stays quiet reading text. */
+.chips { display: block; margin-top: 1.6rem; min-height: 0; border-top: 1px solid var(--line); }
 .chip {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0.65rem 0.95rem;
-  box-shadow: var(--shadow);
-  flex: 1 1 180px;
-  min-width: 170px;
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 0.2rem 1rem;
+  align-items: baseline;
+  border-bottom: 1px solid var(--line);
+  padding: 0.6rem 0.1rem 0.65rem;
+  min-width: 0;
 }
-.chip .who { font-size: 0.72rem; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); }
-.chip .state { font-weight: 600; font-size: 0.98rem; }
-.chip.stable .state { color: var(--stable); }
-.chip.lake .state { color: var(--lake); }
-.chip.concern .state { color: var(--gold); }
+.chip .who {
+  font-size: 0.72rem;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chip .who::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  vertical-align: 1px;
+  background: var(--muted);
+}
+.chip .state { font-weight: 400; font-size: 0.92rem; line-height: 1.55; color: var(--ink-soft); }
+.chip.stable .who::before { background: var(--stable); }
+.chip.lake .who::before { background: var(--lake); }
+.chip.concern .who::before { background: var(--gold-graphic); }
+@media (max-width: 560px) {
+  .chip { grid-template-columns: 1fr; padding-block: 0.7rem; }
+}
+
+/* ---- the wall's invitation: the page's one big ask ---- */
+.story-invite {
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold-graphic) 8%, var(--surface)), var(--surface) 70%);
+  box-shadow: var(--shadow);
+  padding: 2.4rem 1.6rem 2.5rem;
+  margin-top: 2.2rem;
+}
+.story-invite .si-k {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0 0 0.9rem;
+}
+.story-invite h2 {
+  font-family: var(--display);
+  font-size: clamp(1.65rem, 5vw, 2.3rem);
+  font-weight: 500;
+  line-height: 1.15;
+  text-wrap: balance;
+  margin: 0 0 0.7rem;
+  border: 0;
+  padding: 0;
+}
+.story-invite .si-lede {
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  max-width: 46ch;
+  margin: 0 auto 1.5rem;
+  text-wrap: pretty;
+}
+.story-invite .si-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem 1.4rem;
+}
+.story-invite .si-alt {
+  font-size: 0.92rem;
+  color: var(--muted);
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+.story-invite .si-alt:hover { color: var(--lake); }
+@media (max-width: 479px) {
+  .story-invite { padding: 1.9rem 1.15rem 2rem; margin-top: 1.6rem; }
+}
 
 /* ---- updates feed ---- */
 .feed { display: grid; gap: 1rem; padding: 0; margin: 0; list-style: none; }
