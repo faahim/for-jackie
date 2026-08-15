@@ -6,7 +6,7 @@
 <title>The Story of Jackie — a Life Above Big Bear Lake, 2012–2026 · For Jackie</title>
 <meta name="description" content="The whole life of Jackie, the Big Bear bald eagle — the first chick ever hatched in the valley, the camera that made her famous, the blizzard, her ten eaglets, and the twenty-three days the world held its breath. Every date linked to the people who recorded it.">
 <link rel="stylesheet" href="/styles.css?v=15">
-<link rel="stylesheet" href="/timeline.css?v=18">
+<link rel="stylesheet" href="/timeline.css?v=19">
 <link rel="canonical" href="https://forjackie.org/timeline">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
@@ -658,13 +658,22 @@ document.documentElement.classList.add("js");
     sections.forEach(function (s) { io.observe(s); });
   }
   var bar = document.getElementById("tl-bar");
-  if (bar) {
+  var helds = Array.prototype.slice.call(document.querySelectorAll(".held"));
+  if (bar || helds.length) {
     var ticking = false;
     var update = function () {
       ticking = false;
-      var doc = document.documentElement;
-      var max = doc.scrollHeight - window.innerHeight;
-      bar.style.transform = "scaleX(" + (max > 0 ? Math.min(1, doc.scrollTop / max) : 0) + ")";
+      if (bar) {
+        var doc = document.documentElement;
+        var max = doc.scrollHeight - window.innerHeight;
+        bar.style.transform = "scaleX(" + (max > 0 ? Math.min(1, doc.scrollTop / max) : 0) + ")";
+      }
+      /* chrome steps out of the frame while a held scene owns the viewport */
+      var active = helds.some(function (h) {
+        var r = h.getBoundingClientRect();
+        return r.top < 80 && r.bottom > window.innerHeight - 80;
+      });
+      document.body.classList.toggle("held-active", active);
     };
     window.addEventListener("scroll", function () {
       if (!ticking) { ticking = true; requestAnimationFrame(update); }
