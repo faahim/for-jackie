@@ -607,6 +607,15 @@ async function handleIncomingMessage(request, env) {
   // Stories may carry a short optional "where you watched from" line.
   const from = kind === "story" && typeof body.from === "string" ? body.from.trim().slice(0, 80) : "";
   const contact = typeof body.contact === "string" ? body.contact.trim().slice(0, 200) : "";
+  // Stories get a permanent public page, so the keeper needs a way to reach
+  // the writer (takedowns, ownership claims). Stored in the private msg:*
+  // record only — the public wall/story payloads never carry it.
+  if (kind === "story" && !/^\S+@\S+\.\S+$/.test(contact)) {
+    return json(
+      { ok: false, error: "please include an email address — it is never shown publicly, and is only used if the keeper needs to reach you about your story" },
+      400
+    );
+  }
   const fromPage = typeof body.page === "string" ? body.page.trim().slice(0, 40) : "";
 
   // Best-effort per-IP rate limit: 5/hour (KV counter, non-atomic is fine here).

@@ -559,6 +559,10 @@
       if (submitBtn && !submitBtn.disabled) submitBtn.textContent = m.submit;
       var fromField = document.getElementById("from-field");
       if (fromField) fromField.hidden = !story;
+      // Stories require a private contact email (permanent public page);
+      // notes stay anonymous-friendly, so the field hides entirely.
+      var emailField = document.getElementById("email-field");
+      if (emailField) emailField.hidden = !story;
       form.elements.message.maxLength = m.max;
       form.elements.message.rows = m.rows;
       syncCounter();
@@ -588,6 +592,12 @@
         errorEl.hidden = false;
         return;
       }
+      if (m === "story" && !/^\S+@\S+\.\S+$/.test(form.elements.contact.value.trim())) {
+        errorEl.textContent = "Please add your email — it's never shown publicly, and is only used if the keeper needs to reach you about your story.";
+        errorEl.hidden = false;
+        form.elements.contact.focus();
+        return;
+      }
       if (!form.elements.consent.checked) {
         errorEl.textContent = "Please tick the box confirming your words may be displayed publicly.";
         errorEl.hidden = false;
@@ -605,7 +615,10 @@
         website: form.elements.website.value,
         page: page,
       };
-      if (m === "story") payload.from = form.elements.from.value.trim();
+      if (m === "story") {
+        payload.from = form.elements.from.value.trim();
+        payload.contact = form.elements.contact.value.trim();
+      }
       fetch("/api/messages", {
         method: "POST",
         headers: { "content-type": "application/json" },

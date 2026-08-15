@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wall of Love — For Jackie</title>
 <meta name="description" content="A moderated community memorial wall for Jackie, the Big Bear bald eagle — leave a note, share the story of what she meant to you, and read the community's light.">
-<link rel="stylesheet" href="/styles.css?v=13">
+<link rel="stylesheet" href="/styles.css?v=14">
 <link rel="canonical" href="https://forjackie.org/wall">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
@@ -96,20 +96,22 @@ document.documentElement.classList.add("js");
       <form id="wall-form" novalidate>
         <fieldset class="mode-pick" id="wall-mode">
           <legend class="visually-hidden">What would you like to share?</legend>
-          <label class="mode"><input type="radio" name="mode" value="note" checked><span>A short note</span></label>
-          <label class="mode"><input type="radio" name="mode" value="story"><span>Your story</span></label>
+          <label class="mode"><input type="radio" name="mode" value="story" checked><span>Your story</span></label>
+          <label class="mode"><input type="radio" name="mode" value="note"><span>A short note</span></label>
         </fieldset>
-        <p class="mode-hint" id="mode-hint">A few kind words for the wall — a line or two is plenty.</p>
+        <p class="mode-hint" id="mode-hint">Take your time. What did she mean to you? Approved stories get a permanent page of their own — a link you can keep and share.</p>
         <label class="msg-field"><span class="lbl">Your name <em>· optional</em></span>
         <input name="name" maxlength="60" autocomplete="name"></label>
-        <label class="msg-field" id="from-field" hidden><span class="lbl">Where you watched from <em>· optional</em></span>
+        <label class="msg-field" id="email-field"><span class="lbl">Your email <em>· never shown publicly</em></span>
+        <input name="contact" type="email" maxlength="200" autocomplete="email"></label>
+        <label class="msg-field" id="from-field"><span class="lbl">Where you watched from <em>· optional</em></span>
         <input name="from" maxlength="80" placeholder="Ohio · watching since the 2023 snowstorm"></label>
-        <label class="msg-field"><span class="lbl lbl-row"><span id="msg-lbl">Your note</span> <span class="counter" id="wall-count" aria-hidden="true">0 / 500</span></span>
-        <textarea name="message" maxlength="500" required rows="4"></textarea></label>
+        <label class="msg-field"><span class="lbl lbl-row"><span id="msg-lbl">Your story</span> <span class="counter" id="wall-count" aria-hidden="true">0 / 2500</span></span>
+        <textarea name="message" maxlength="2500" required rows="9"></textarea></label>
         <label class="hp" aria-hidden="true">Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label>
-        <label class="consent"><input type="checkbox" name="consent"><span id="consent-txt">My note may be displayed publicly on this page.</span></label>
+        <label class="consent"><input type="checkbox" name="consent"><span id="consent-txt">My story may be displayed publicly, on this page and on a page of its own.</span></label>
         <p class="msg-error" hidden></p>
-        <button type="submit" class="btn" id="wall-submit">Add my note</button>
+        <button type="submit" class="btn" id="wall-submit">Share my story</button>
       </form>
       <div class="wall-done" hidden>
         <p><strong>Thank you.</strong> Everything on the wall is checked before it appears — usually within a day.</p>
@@ -182,6 +184,6 @@ document.documentElement.classList.add("js");
   </button>
 </nav>
 
-<script src="/app.js?v=13" defer></script>
+<script src="/app.js?v=14" defer></script>
 </body>
 </html>
