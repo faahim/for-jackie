@@ -1,0 +1,493 @@
+/* ============================================================
+   The Story of Jackie — /timeline
+   One day over the lake: the page moves through a full day of
+   light as her life unfolds. Night (prologue) → dawn (2012) →
+   day (the seasons) → snow (2023) → day → dusk (the last weeks)
+   → night (her death) → first light again (what remains).
+   Each chapter carries its own phase palette by REDEFINING the
+   site's standard tokens locally, so every inherited component
+   (source chips, backlinks, type colors) adapts on its own.
+   ============================================================ */
+
+/* ---- phase palettes ----
+   Applied twice: to the chapter sections themselves (static, no JS
+   needed) and to <body data-phase> (JS-driven, so the sticky chrome
+   follows the reader through the day). */
+
+.ph-night, body[data-phase="night"] {
+  --ground: #0F1613; --surface: #17201B; --surface-2: #1D2822;
+  --ink: #E6ECE8; --ink-soft: #C2CDC6; --muted: #93A39B;
+  --line: #263229; --lake: #7BB8BE; --lake-soft: #1A2A2C;
+  --gold: #D9AE4B; --gold-graphic: #D9AE4B;
+  --shadow: none; --shadow-lift: 0 2px 4px rgba(0,0,0,.35), 0 14px 32px rgba(0,0,0,.45);
+}
+.ph-dawn, body[data-phase="dawn"] {
+  --ground: #171E27; --surface: #1D2530; --surface-2: #232D3A;
+  --ink: #E8EBEE; --ink-soft: #C4CCD4; --muted: #93A0AD;
+  --line: #2A3541; --lake: #8FC0C6; --lake-soft: #1B2A31;
+  --gold: #D9AE4B; --gold-graphic: #D9AE4B;
+  --shadow: none; --shadow-lift: 0 2px 4px rgba(0,0,0,.35), 0 14px 32px rgba(0,0,0,.45);
+}
+.ph-day, body[data-phase="day"] {
+  --ground: #F1F4F2; --surface: #FBFCFB; --surface-2: #E9EEEB;
+  --ink: #1D2B25; --ink-soft: #45524C; --muted: #5C6B64;
+  --line: #D5DED9; --lake: #2F6D74; --lake-soft: #E1EBEC;
+  --gold: #8C6819; --gold-graphic: #C89A2B;
+  --shadow: 0 1px 2px rgba(29,43,37,.06), 0 8px 24px rgba(29,43,37,.07);
+  --shadow-lift: 0 2px 4px rgba(29,43,37,.07), 0 14px 32px rgba(29,43,37,.11);
+}
+.ph-snow, body[data-phase="snow"] {
+  --ground: #F6F9FA; --surface: #FDFEFE; --surface-2: #EBF1F3;
+  --ink: #16232B; --ink-soft: #3E4E58; --muted: #64757F;
+  --line: #D9E3E8; --lake: #33636F; --lake-soft: #E3EDF0;
+  --gold: #56707E; /* cold steel replaces gold in the white chapter */
+  --gold-graphic: #7C97A3;
+  --shadow: 0 1px 2px rgba(22,35,43,.05), 0 8px 24px rgba(22,35,43,.06);
+  --shadow-lift: 0 2px 4px rgba(22,35,43,.06), 0 14px 32px rgba(22,35,43,.1);
+}
+.ph-dusk, body[data-phase="dusk"] {
+  --ground: #251C11; --surface: #2C2216; --surface-2: #33281A;
+  --ink: #F0E7D8; --ink-soft: #D8CCB6; --muted: #AB9878;
+  --line: #3C2F1E; --lake: #A9C7CA; --lake-soft: #2E2A1E;
+  --gold: #E0B45C; --gold-graphic: #E0B45C;
+  --shadow: none; --shadow-lift: 0 2px 4px rgba(0,0,0,.35), 0 14px 32px rgba(0,0,0,.45);
+}
+
+/* The sticky chrome eases through the day with the reader. */
+body[data-page="life"] { background: var(--ground); transition: background-color 900ms ease; }
+body[data-page="life"] .topnav { transition: background-color 900ms ease, border-color 900ms ease; }
+body[data-page="life"] .topnav .wordmark,
+body[data-page="life"] .topnav .fresh,
+body[data-page="life"] .topnav .links a { transition: color 900ms ease; }
+
+/* ---- page frame ---- */
+/* the global `main` is a 780px reading column; this page IS the stage */
+main.life { max-width: none; margin: 0; padding: 0; overflow-x: clip; }
+.ch {
+  position: relative;
+  background: var(--ground);
+  color: var(--ink);
+  padding: clamp(4.5rem, 10vh, 8rem) 1.25rem;
+}
+/* long sky-gradient hand-offs where the light changes */
+.ch.from-night   { background: linear-gradient(to bottom, #0F1613 0, var(--ground) 24rem); }
+.ch.from-dawn    { background: linear-gradient(to bottom, #171E27 0, var(--ground) 26rem); }
+.ch.from-day     { background: linear-gradient(to bottom, #F1F4F2 0, var(--ground) 24rem); }
+.ch.from-snow    { background: linear-gradient(to bottom, #F6F9FA 0, var(--ground) 24rem); }
+.ch.from-dusk    { background: linear-gradient(to bottom, #251C11 0, var(--ground) 26rem); }
+/* the page's final breath: a band of pre-dawn light rises behind the coda,
+   then the sky settles back to night beneath the footer */
+.ch.to-morning   { background: linear-gradient(to bottom, #0F1613 0, #16202A 45%, #22313F 72%, #101820 100%); }
+
+.ch-inner { max-width: 680px; margin: 0 auto; position: relative; }
+
+/* ---- the ghost year: sequence marker as watermark, never a shout ---- */
+.ch-year {
+  font-family: var(--display);
+  font-size: clamp(4.5rem, 16vw, 10rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  opacity: 0.1;
+  user-select: none;
+  margin: 0 0 -0.35em -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.ch h2 {
+  font-family: var(--display);
+  font-size: clamp(1.8rem, 4.6vw, 2.7rem);
+  font-weight: 500;
+  line-height: 1.15;
+  text-wrap: balance;
+  margin: 0 0 0.4em;
+}
+.ch-kicker {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: var(--track-eyebrow, 0.14em);
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0 0 1rem;
+}
+
+/* ---- narrative prose: her story is set in the serif ---- */
+.ch p.prose, .ch .prose p {
+  font-family: var(--display);
+  font-size: 1.17rem;
+  line-height: 1.75;
+  max-width: 60ch;
+  margin: 0 0 1.05em;
+}
+.ch p.lead { font-size: 1.28rem; line-height: 1.65; }
+.ph-night p.prose, .ph-night .prose p, .ph-dawn p.prose, .ph-dawn .prose p,
+.ph-dusk p.prose, .ph-dusk .prose p { line-height: 1.8; letter-spacing: 0.01em; }
+.ch p.aside-sans {
+  font-family: var(--body);
+  font-size: 0.98rem;
+  color: var(--ink-soft);
+  max-width: 58ch;
+  margin: 0 0 1em;
+}
+.ch strong { font-weight: 600; }
+.ch a { color: var(--lake); }
+
+/* ---- full-viewport hero ---- */
+.ch-hero {
+  min-height: 92svh;
+  display: flex;
+  align-items: center;
+  padding-top: 3rem;
+  padding-bottom: 4rem;
+}
+.ch-hero .ch-inner { text-align: center; max-width: 760px; }
+.hero-place {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 1.6rem;
+}
+.hero-name {
+  font-family: var(--display);
+  font-size: clamp(3.4rem, 13vw, 6rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+.hero-dates {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  letter-spacing: 0.3em;
+  color: var(--gold);
+  margin: 1.1rem 0 2.2rem;
+  font-variant-numeric: tabular-nums;
+}
+.hero-figure { margin: 0 auto 1.9rem; max-width: 480px; }
+.hero-figure img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+}
+.hero-epigraph {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(1.15rem, 2.8vw, 1.45rem);
+  line-height: 1.5;
+  max-width: 34ch;
+  margin: 0 auto 0.7rem;
+  text-wrap: balance;
+}
+.hero-epigraph cite { display: block; font-style: normal; }
+.hero-note {
+  font-family: var(--body);
+  font-size: 0.92rem;
+  color: var(--muted);
+  max-width: 44ch;
+  margin: 1.6rem auto 0;
+}
+.scroll-cue {
+  margin: 2.4rem auto 0;
+  width: 1px;
+  height: 56px;
+  background: linear-gradient(to bottom, transparent, var(--gold));
+  animation: cue-drift 2.6s ease-in-out infinite;
+}
+@keyframes cue-drift { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+
+/* ---- figures ---- */
+.ch figure { margin: 2.2rem 0; }
+.ch figure img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+}
+.fig-frame { overflow: hidden; border-radius: 6px; }
+/* Breakouts use margin math, NOT translate — the site's .reveal system
+   animates the translate property and would stomp a translate-based breakout. */
+.ch .fig-wide {
+  width: min(960px, calc(100vw - 2.5rem));
+  margin-left: calc(50% - min(480px, 50vw - 1.25rem));
+}
+.ch .fig-bleed {
+  width: 100vw;
+  max-width: none;
+  margin-left: calc(50% - 50vw);
+}
+.fig-bleed img, .fig-bleed .fig-frame { border-radius: 0; }
+.fig-inset { max-width: 620px; }
+.fig-half  { max-width: 440px; }
+.ch .fig-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  width: min(960px, calc(100vw - 2.5rem));
+  margin-left: calc(50% - min(480px, 50vw - 1.25rem));
+}
+.fig-pair figure { margin: 0; }
+@media (max-width: 560px) { .fig-pair { grid-template-columns: 1fr; gap: 1.4rem; } }
+.ch figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.9rem;
+  padding: 0.55rem 0.15rem 0;
+  max-width: 68ch;
+}
+.fig-bleed figcaption { padding-inline: 1.25rem; margin: 0 auto; }
+.ch .cap {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+.ch .cred {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: var(--track-label, 0.08em);
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---- spoken moments: the voices of the record ---- */
+.voice {
+  margin: 2.6rem 0;
+  max-width: 620px;
+}
+.voice p {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(1.3rem, 3.4vw, 1.75rem);
+  line-height: 1.45;
+  margin: 0 0 0.7rem;
+  text-wrap: balance;
+}
+.voice p::before { content: "\201C"; color: var(--gold); }
+.voice p::after { content: "\201D"; color: var(--gold); }
+.voice cite {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 0.7rem;
+  letter-spacing: var(--track-label, 0.08em);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.voice cite a { color: inherit; }
+.voice-grand { max-width: 720px; margin: 3.4rem auto; text-align: center; }
+.voice-grand p { font-size: clamp(1.5rem, 4.2vw, 2.2rem); }
+
+/* ---- field notes: what the record cannot say ---- */
+.fieldnote {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 1.1rem 1.3rem 1.2rem;
+  margin: 2.2rem 0;
+  max-width: 620px;
+}
+.fieldnote .fn-label {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: var(--track-eyebrow, 0.14em);
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0 0 0.5rem;
+}
+.fieldnote p {
+  font-family: var(--body);
+  font-size: 0.97rem;
+  line-height: 1.65;
+  color: var(--ink-soft);
+  margin: 0 0 0.6em;
+  max-width: 60ch;
+}
+.fieldnote p:last-child { margin-bottom: 0; }
+
+/* ---- her life, counted ---- */
+.count {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1.8rem 1.2rem;
+  margin: 2.8rem 0;
+  max-width: 680px;
+}
+.count .n {
+  font-family: var(--display);
+  font-size: clamp(2.1rem, 5vw, 2.9rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+.count .l {
+  font-family: var(--body);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  display: block;
+  max-width: 20ch;
+}
+
+/* ---- the blood numbers, plainly ---- */
+.pcv {
+  margin: 2.4rem 0;
+  max-width: 430px;
+  border-top: 1px solid var(--line);
+}
+.pcv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.55rem 0.1rem;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.pcv-row .d { color: var(--muted); }
+.pcv-row .v { color: var(--ink); }
+.pcv-row.low .v { color: var(--gold); }
+.pcv-note {
+  font-family: var(--body);
+  font-size: 0.82rem;
+  color: var(--muted);
+  padding-top: 0.5rem;
+}
+
+/* ---- receipts ---- */
+.receipts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1.8rem 0 0;
+  max-width: 640px;
+}
+.ch .src { box-shadow: none; }
+.ch .src:hover { background: var(--lake-soft); }
+
+/* ---- chapter close rule: a quiet horizon line ---- */
+.horizon {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--line) 25%, var(--line) 75%, transparent);
+  margin: 3.2rem auto 0;
+  max-width: 380px;
+}
+
+/* ---- coda ---- */
+.coda-cta {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin: 2.6rem 0 0;
+  max-width: 640px;
+}
+@media (min-width: 640px) { .coda-cta { grid-template-columns: 1fr 1fr; } }
+.coda-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem 1.2rem;
+  text-decoration: none;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  transition: border-color var(--duration-fast, 250ms) var(--ease-smooth-out, ease-out),
+              translate var(--duration-fast, 250ms) var(--ease-smooth-out, ease-out);
+}
+.coda-card:hover, .coda-card:focus-visible { border-color: var(--gold); translate: 0 -2px; }
+.coda-card .t { font-family: var(--display); font-size: 1.24rem; line-height: 1.3; }
+.coda-card .d { font-family: var(--body); font-size: 0.92rem; color: var(--ink-soft); }
+.coda-card .k {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: var(--track-eyebrow, 0.14em);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.finis {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 4rem 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- reading progress hairline ---- */
+.tl-progress {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  z-index: 40;
+  pointer-events: none;
+}
+.tl-progress span {
+  display: block;
+  height: 100%;
+  background: var(--gold-graphic, #C89A2B);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+
+/* ---- reveals: this page breathes a little slower ---- */
+html.js body[data-page="life"] .reveal.is-in {
+  transition-duration: 800ms;
+}
+
+/* ---- scroll-driven enhancement (where supported): images settle as they arrive ---- */
+@supports (animation-timeline: view()) {
+  body[data-page="life"] .fig-frame img {
+    animation: tl-settle linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 42%;
+  }
+  @keyframes tl-settle {
+    from { transform: scale(1.055) translateY(10px); }
+    to   { transform: scale(1) translateY(0); }
+  }
+  body[data-page="life"] .ch-year {
+    animation: tl-drift linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 60%;
+  }
+  @keyframes tl-drift {
+    from { transform: translateY(0.35em); opacity: 0; }
+    to   { transform: translateY(0); opacity: 0.1; }
+  }
+}
+
+/* ---- small screens ---- */
+@media (max-width: 479px) {
+  .ch { padding-inline: 1.1rem; }
+  .ch p.prose, .ch .prose p { font-size: 1.0625rem; }
+  .ch p.lead { font-size: 1.14rem; }
+  .voice p { font-size: 1.22rem; }
+  .voice-grand p { font-size: 1.4rem; }
+  .hero-figure { max-width: 340px; }
+}
+
+/* ---- stillness for those who asked for it ---- */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue { animation: none; opacity: 0.6; }
+  body[data-page="life"], body[data-page="life"] .topnav,
+  body[data-page="life"] .topnav .wordmark,
+  body[data-page="life"] .topnav .fresh,
+  body[data-page="life"] .topnav .links a { transition: none; }
+  @supports (animation-timeline: view()) {
+    body[data-page="life"] .fig-frame img,
+    body[data-page="life"] .ch-year { animation: none; }
+  }
+  .coda-card { transition: none; }
+}

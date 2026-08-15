@@ -19,7 +19,8 @@ export const PAGE_FOR_PATH = {
   "/": "home",
   "/updates": "updates",
   "/rumors": "rumors",
-  "/timeline": "timeline",
+  "/timeline": "life",   // the cinematic life story (static content, Aug 15 2026)
+  "/record": "timeline", // the 2026 day-by-day record (renders content.timeline[])
   "/wall": "wall",
   "/about": "about",
   "/help": "help",
@@ -345,10 +346,24 @@ export function jsonLdFor(page, c) {
     );
   }
 
-  if (page === "timeline") {
+  if (page === "life") {
     graph.push(
       base("/timeline", {
-        name: "Jackie & Shadow's 2026 season, the rescue, and the recovery — timeline",
+        "@type": "Article",
+        headline: "The Story of Jackie — a Life Above Big Bear Lake, 2012–2026",
+        name: "The Story of Jackie — a Life Above Big Bear Lake, 2012–2026",
+        description:
+          "The whole life of Jackie, the Big Bear bald eagle: the first chick ever documented hatching in the valley (2012), the nest camera that made her famous, the 2023 blizzard, her ten eaglets, and her death at the Ojai Raptor Center in August 2026 — every fact sourced to FOBBV, ORC, CDFW and first-hand reporting.",
+        datePublished: "2026-08-15",
+        publisher: { "@id": SITE + "/#org" },
+      })
+    );
+  }
+
+  if (page === "timeline") {
+    graph.push(
+      base("/record", {
+        name: "Jackie's 2026, day by day — the season, the rescue, and the final weeks, with sources",
         mainEntity: {
           "@type": "ItemList",
           itemListElement: (c.timeline || [])
@@ -666,7 +681,7 @@ export function renderUpdatePage(found, c) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
-<link rel="stylesheet" href="/styles.css?v=14">
+<link rel="stylesheet" href="/styles.css?v=15">
 <link rel="canonical" href="${esc(url)}">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
@@ -781,7 +796,7 @@ ${bannerHtml}
   </button>
 </nav>
 
-<script src="/app.js?v=14" defer></script>
+<script src="/app.js?v=15" defer></script>
 </body>
 </html>
 `;
@@ -796,7 +811,7 @@ export function renderUpdate404() {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Update not found · For Jackie</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/styles.css?v=14">
+<link rel="stylesheet" href="/styles.css?v=15">
 </head>
 <body data-page="post">
 <main>
@@ -867,7 +882,7 @@ export function renderStoryPage(story, id, c) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
-<link rel="stylesheet" href="/styles.css?v=14">
+<link rel="stylesheet" href="/styles.css?v=15">
 <link rel="canonical" href="${esc(url)}">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
@@ -971,7 +986,7 @@ ${bannerHtml}
   </button>
 </nav>
 
-<script src="/app.js?v=14" defer></script>
+<script src="/app.js?v=15" defer></script>
 </body>
 </html>
 `;
@@ -986,7 +1001,7 @@ export function renderStory404() {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Story not found · For Jackie</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/styles.css?v=14">
+<link rel="stylesheet" href="/styles.css?v=15">
 </head>
 <body data-page="story">
 <main>
@@ -1023,7 +1038,8 @@ Current summary: ${(c.headline && c.headline.lede) || ""}
 - [Live status](${SITE}/): Jackie's current condition, family status, latest verified updates, and open unknowns
 - [Verified updates](${SITE}/updates): every update in order, each with its sources
 - [Rumor check](${SITE}/rumors): circulating claims measured against what official sources actually said
-- [Timeline](${SITE}/timeline): the full 2026 season, the rescue, and the recovery
+- [The story of Jackie](${SITE}/timeline): her whole life, 2012–2026 — the first chick hatched in Big Bear Valley, the camera, the blizzard, her ten eaglets, and her final weeks, every fact sourced
+- [The 2026 record](${SITE}/record): the season, the rescue, and the final weeks, day by day with sources
 - [How to help](${SITE}/help): what genuinely helps (and what to skip)
 - [About & sources](${SITE}/about): who runs this and the verification rules
 
@@ -1086,7 +1102,10 @@ export function llmsFullTxt(c) {
     L.push("");
   }
   if (c.timeline && c.timeline.length) {
-    L.push("## Timeline");
+    L.push("## Her whole life, as one story");
+    L.push("The Story of Jackie (" + SITE + "/timeline) tells her entire life, 2012-2026, with every fact sourced: the first bald eagle chick ever documented hatching in Big Bear Valley (summer 2012, per CDFW), the FOBBV nest camera installed October 2015, her years with Mr. B and then Shadow (from 2018), the 2023 blizzard that made her world-famous, ten eaglets of which seven fledged (Stormy, Simba, Spirit, Sunny, Gizmo, Sandy, Luna), 25 eggs, her 62-hour incubation record (Feb 2024), and her death at the Ojai Raptor Center overnight Aug 9-10, 2026, at age 14.");
+    L.push("");
+    L.push("## The 2026 record (day-by-day timeline)");
     for (const ch of c.timeline) {
       L.push("### " + ch.chapter);
       for (const ev of ch.events) L.push("- " + ev.date + " — " + ev.title + ": " + ev.body);
@@ -1112,7 +1131,8 @@ export function sitemapXml(c) {
     { path: "/", lastmod },
     { path: "/updates", lastmod },
     { path: "/rumors", lastmod },
-    { path: "/timeline", lastmod },
+    { path: "/timeline", lastmod: "2026-08-15" },
+    { path: "/record", lastmod },
     { path: "/wall" },
     { path: "/help" },
     { path: "/about" },

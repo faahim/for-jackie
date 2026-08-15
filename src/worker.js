@@ -527,7 +527,7 @@ async function handlePage(request, url, env) {
  */
 async function pingIndexNow(content) {
   try {
-    const paths = ["/", "/updates", "/rumors", "/timeline", "/wall", "/help", "/about"];
+    const paths = ["/", "/updates", "/rumors", "/timeline", "/record", "/wall", "/help", "/about"];
     for (const u of (content && content.updates) || []) {
       if (u.id) paths.push("/updates/" + u.id);
     }

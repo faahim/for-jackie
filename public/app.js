@@ -1010,7 +1010,8 @@
         moreContent = document.createElement("div");
         moreContent.innerHTML =
           '<nav class="sheet-rows" aria-label="More pages">' +
-          '<a class="sheet-row" href="/timeline"><span class="eyebrow">The story of 2026</span><span class="row-title">Timeline</span></a>' +
+          '<a class="sheet-row" href="/timeline"><span class="eyebrow">Her whole story · 2012–2026</span><span class="row-title">The Story of Jackie</span></a>' +
+          '<a class="sheet-row" href="/record"><span class="eyebrow">2026, day by day</span><span class="row-title">The 2026 Record</span></a>' +
           '<a class="sheet-row" href="/about"><span class="eyebrow">Why this exists · sources</span><span class="row-title">About this page</span></a>' +
           '<button class="sheet-row" type="button"><span class="eyebrow">Say hello</span><span class="row-title">Write to the keeper</span></button>' +
           "</nav>";
