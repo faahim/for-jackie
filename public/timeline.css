@@ -19,6 +19,7 @@
   --ink: #E6ECE8; --ink-soft: #C2CDC6; --muted: #93A39B;
   --line: #263229; --lake: #7BB8BE; --lake-soft: #1A2A2C;
   --gold: #D9AE4B; --gold-graphic: #D9AE4B;
+  --veil: 58%;
   --shadow: none; --shadow-lift: 0 2px 4px rgba(0,0,0,.35), 0 14px 32px rgba(0,0,0,.45);
 }
 .ph-dawn, body[data-phase="dawn"] {
@@ -26,6 +27,7 @@
   --ink: #E8EBEE; --ink-soft: #C4CCD4; --muted: #93A0AD;
   --line: #2A3541; --lake: #8FC0C6; --lake-soft: #1B2A31;
   --gold: #D9AE4B; --gold-graphic: #D9AE4B;
+  --veil: 62%;
   --shadow: none; --shadow-lift: 0 2px 4px rgba(0,0,0,.35), 0 14px 32px rgba(0,0,0,.45);
 }
 .ph-day, body[data-phase="day"] {
@@ -33,6 +35,7 @@
   --ink: #1D2B25; --ink-soft: #45524C; --muted: #5C6B64;
   --line: #D5DED9; --lake: #2F6D74; --lake-soft: #E1EBEC;
   --gold: #8C6819; --gold-graphic: #C89A2B;
+  --veil: 86%;
   --shadow: 0 1px 2px rgba(29,43,37,.06), 0 8px 24px rgba(29,43,37,.07);
   --shadow-lift: 0 2px 4px rgba(29,43,37,.07), 0 14px 32px rgba(29,43,37,.11);
 }
@@ -42,6 +45,7 @@
   --line: #D9E3E8; --lake: #33636F; --lake-soft: #E3EDF0;
   --gold: #56707E; /* cold steel replaces gold in the white chapter */
   --gold-graphic: #7C97A3;
+  --veil: 82%;
   --shadow: 0 1px 2px rgba(22,35,43,.05), 0 8px 24px rgba(22,35,43,.06);
   --shadow-lift: 0 2px 4px rgba(22,35,43,.06), 0 14px 32px rgba(22,35,43,.1);
 }
@@ -50,8 +54,96 @@
   --ink: #F0E7D8; --ink-soft: #D8CCB6; --muted: #AB9878;
   --line: #3C2F1E; --lake: #A9C7CA; --lake-soft: #2E2A1E;
   --gold: #E0B45C; --gold-graphic: #E0B45C;
+  --veil: 60%;
   --shadow: none; --shadow-lift: 0 2px 4px rgba(0,0,0,.35), 0 14px 32px rgba(0,0,0,.45);
 }
+
+/* ============================================================
+   THE SCENE — a fixed, full-viewport backdrop behind the whole
+   page. Blurred, dimmed imagery of her world (the lake, the
+   shoreline, the blizzard, the sunset nest) cross-fades as the
+   reader crosses phases; at night it is a field of stars. The
+   chapters above it are translucent (see --veil), so the page
+   reads as light moving over a place, not sections on a page.
+   Everything here is compositor-only: opacity crossfades on
+   pre-blurred layers, no per-frame paint.
+   ============================================================ */
+#scene { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+#scene .sc {
+  position: absolute; inset: 0;
+  opacity: 0; visibility: hidden;
+  transition: opacity 1400ms ease, visibility 0s 1400ms;
+}
+#scene .sc-img {
+  background-size: cover;
+  background-position: center;
+  filter: blur(22px) saturate(0.82);
+  transform: scale(1.15); /* hides blur-darkened edges */
+}
+.sc-dawn { background-image: url(/media/tl/scene/dawn.jpg); }
+.sc-day  { background-image: url(/media/tl/scene/day.jpg); }
+.sc-snow { background-image: url(/media/tl/scene/snow.jpg); }
+.sc-dusk { background-image: url(/media/tl/scene/dusk.jpg); }
+body[data-phase="dawn"] #scene .sc-dawn,
+body[data-phase="day"]  #scene .sc-day,
+body[data-phase="snow"] #scene .sc-snow,
+body[data-phase="dusk"] #scene .sc-dusk,
+body[data-phase="night"] #scene .sc-night {
+  opacity: 1; visibility: visible;
+  transition: opacity 1400ms ease, visibility 0s;
+}
+
+/* night: no photograph — a thin moon-glow and two layers of stars */
+.sc-night {
+  background: radial-gradient(60% 42% at 72% 16%, rgba(123,184,190,0.09), transparent 70%);
+}
+.sc-night .stars {
+  position: absolute; top: 0; left: 0;
+  width: 2px; height: 2px; border-radius: 50%;
+  background: rgba(230,236,232,0.9);
+}
+.sc-night .s1 { box-shadow:
+  4vw 12vh 0 0 rgba(230,236,232,.75), 11vw 31vh 0 0 rgba(230,236,232,.5),
+  17vw 6vh 0 0 rgba(230,236,232,.85), 24vw 22vh 0 0 rgba(230,236,232,.45),
+  31vw 9vh 0 0 rgba(230,236,232,.7), 37vw 38vh 0 0 rgba(230,236,232,.4),
+  44vw 15vh 0 0 rgba(230,236,232,.8), 52vw 27vh 0 0 rgba(230,236,232,.5),
+  59vw 5vh 0 0 rgba(230,236,232,.65), 66vw 33vh 0 0 rgba(230,236,232,.45),
+  71vw 11vh 0 0 rgba(230,236,232,.85), 78vw 24vh 0 0 rgba(230,236,232,.5),
+  84vw 7vh 0 0 rgba(230,236,232,.7), 91vw 18vh 0 0 rgba(230,236,232,.55),
+  96vw 36vh 0 0 rgba(230,236,232,.4), 8vw 52vh 0 0 rgba(230,236,232,.35),
+  27vw 58vh 0 0 rgba(230,236,232,.3), 49vw 55vh 0 0 rgba(230,236,232,.35),
+  68vw 61vh 0 0 rgba(230,236,232,.28), 88vw 54vh 0 0 rgba(230,236,232,.32);
+  animation: star-breathe 9s ease-in-out infinite alternate;
+}
+.sc-night .s2 { width: 1px; height: 1px; box-shadow:
+  7vw 21vh 0 0 rgba(230,236,232,.5), 14vw 44vh 0 0 rgba(230,236,232,.35),
+  20vw 14vh 0 0 rgba(230,236,232,.55), 28vw 47vh 0 0 rgba(230,236,232,.3),
+  34vw 26vh 0 0 rgba(230,236,232,.5), 41vw 4vh 0 0 rgba(230,236,232,.4),
+  47vw 41vh 0 0 rgba(230,236,232,.35), 55vw 17vh 0 0 rgba(230,236,232,.55),
+  62vw 45vh 0 0 rgba(230,236,232,.3), 69vw 23vh 0 0 rgba(230,236,232,.45),
+  75vw 42vh 0 0 rgba(230,236,232,.3), 82vw 13vh 0 0 rgba(230,236,232,.5),
+  89vw 39vh 0 0 rgba(230,236,232,.32), 94vw 8vh 0 0 rgba(230,236,232,.45),
+  3vw 35vh 0 0 rgba(230,236,232,.4), 16vw 63vh 0 0 rgba(230,236,232,.24),
+  39vw 66vh 0 0 rgba(230,236,232,.22), 58vw 69vh 0 0 rgba(230,236,232,.2),
+  79vw 65vh 0 0 rgba(230,236,232,.24), 97vw 71vh 0 0 rgba(230,236,232,.18);
+  animation: star-breathe 12s ease-in-out 4s infinite alternate;
+}
+@keyframes star-breathe { from { opacity: 0.55; } to { opacity: 1; } }
+
+/* a soft cinema vignette in the dark hours, and a whisper of grain */
+.sc-vignette, .sc-grain {
+  position: absolute; inset: 0;
+  opacity: 0;
+  transition: opacity 1400ms ease;
+}
+.sc-vignette { background: radial-gradient(130% 100% at 50% 38%, transparent 55%, rgba(0,0,0,0.3) 100%); }
+.sc-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+body[data-phase="night"] .sc-vignette, body[data-phase="dawn"] .sc-vignette,
+body[data-phase="dusk"] .sc-vignette { opacity: 1; }
+body[data-phase="night"] .sc-grain, body[data-phase="dawn"] .sc-grain,
+body[data-phase="dusk"] .sc-grain { opacity: 0.05; }
 
 /* The sticky chrome eases through the day with the reader. */
 body[data-page="life"] { background: var(--ground); transition: background-color 900ms ease; }
@@ -78,6 +170,22 @@ main.life { max-width: none; margin: 0; padding: 0; overflow-x: clip; }
 /* the page's final breath: a band of pre-dawn light rises behind the coda,
    then the sky settles back to night beneath the footer */
 .ch.to-morning   { background: linear-gradient(to bottom, #0F1613 0, #16202A 45%, #22313F 72%, #101820 100%); }
+
+/* With JS the chapters turn translucent and the fixed scene shows through —
+   the veil percentages live in the phase palettes (--veil). Solid grounds
+   above remain the no-JS/crawler fallback. Contrast holds because light
+   phases keep an 82–86% veil and the scene imagery beneath is blurred and
+   tone-matched to its phase. */
+html.js body[data-page="life"] .ch {
+  background: color-mix(in srgb, var(--ground) var(--veil), transparent);
+}
+html.js body[data-page="life"] .ch.from-night { background: linear-gradient(to bottom, color-mix(in srgb, #0F1613 58%, transparent) 0, color-mix(in srgb, var(--ground) var(--veil), transparent) 24rem); }
+html.js body[data-page="life"] .ch.from-dawn  { background: linear-gradient(to bottom, color-mix(in srgb, #171E27 62%, transparent) 0, color-mix(in srgb, var(--ground) var(--veil), transparent) 26rem); }
+html.js body[data-page="life"] .ch.from-day   { background: linear-gradient(to bottom, color-mix(in srgb, #F1F4F2 86%, transparent) 0, color-mix(in srgb, var(--ground) var(--veil), transparent) 24rem); }
+html.js body[data-page="life"] .ch.from-snow  { background: linear-gradient(to bottom, color-mix(in srgb, #F6F9FA 82%, transparent) 0, color-mix(in srgb, var(--ground) var(--veil), transparent) 24rem); }
+html.js body[data-page="life"] .ch.from-dusk  { background: linear-gradient(to bottom, color-mix(in srgb, #251C11 60%, transparent) 0, color-mix(in srgb, var(--ground) var(--veil), transparent) 26rem); }
+/* the pre-dawn band goes translucent too, so the last stars shine through it */
+html.js body[data-page="life"] .ch.to-morning { background: linear-gradient(to bottom, rgba(15,22,19,0.86) 0, rgba(22,32,42,0.8) 45%, rgba(34,49,63,0.78) 72%, rgba(16,24,32,0.9) 100%); }
 
 .ch-inner { max-width: 680px; margin: 0 auto; position: relative; }
 
@@ -132,14 +240,31 @@ main.life { max-width: none; margin: 0; padding: 0; overflow-x: clip; }
 .ch strong { font-weight: 600; }
 .ch a { color: var(--lake); }
 
-/* ---- full-viewport hero ---- */
+/* ---- full-viewport hero: a film title card, not a page header ---- */
 .ch-hero {
-  min-height: 92svh;
+  min-height: 100svh;
   display: flex;
   align-items: center;
   padding-top: 3rem;
   padding-bottom: 4rem;
 }
+/* staged arrival: each element rises out of the night in order.
+   Uses translate/filter keyframes — safe here because .rise elements are
+   never .reveal elements (the site reveal system owns that property). */
+html.js .ch-hero .rise {
+  animation: hero-rise 1400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes hero-rise {
+  from { opacity: 0; translate: 0 22px; filter: blur(12px); }
+  to   { opacity: 1; translate: 0 0; filter: blur(0); }
+}
+/* the portrait breathes once, slowly, like a held shot */
+html.js .ch-hero .fig-frame img {
+  animation: hero-breathe 26s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  transform-origin: 50% 38%;
+}
+@keyframes hero-breathe { from { scale: 1.09; } to { scale: 1; } }
 .ch-hero .ch-inner { text-align: center; max-width: 760px; }
 .hero-place {
   font-family: var(--mono);
@@ -252,6 +377,99 @@ main.life { max-width: none; margin: 0; padding: 0; overflow-x: clip; }
   text-transform: uppercase;
   color: var(--muted);
   white-space: nowrap;
+}
+
+/* ============================================================
+   HELD SCENES — the page stops scrolling like a page.
+   A full-viewport image (or the night sky itself) pins in place
+   while short beats of text pass over it. Pure position:sticky,
+   no scroll-jacking, nothing to break: without sticky support
+   it degrades to an image followed by text.
+   ============================================================ */
+.held { position: relative; color: #F2F5F3; }
+.held-media {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+.held-media img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.held-media::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(10,14,12,.42), rgba(10,14,12,.16) 45%, rgba(10,14,12,.42));
+}
+.held-cred {
+  position: absolute;
+  right: 1.1rem;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 1;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: var(--track-label, 0.08em);
+  text-transform: uppercase;
+  color: rgba(240,245,243,0.68);
+  text-shadow: 0 1px 8px rgba(0,0,0,.5);
+}
+.held-beats { position: relative; z-index: 1; margin-top: -100svh; }
+.beat {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.5rem;
+}
+.beat p {
+  font-family: var(--display);
+  font-size: clamp(1.45rem, 4.4vw, 2.5rem);
+  line-height: 1.4;
+  text-align: center;
+  max-width: 24ch;
+  text-wrap: balance;
+  margin: 0;
+  text-shadow: 0 2px 28px rgba(0,0,0,.55);
+}
+.beat .beat-sub {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: var(--track-label, 0.08em);
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin-top: 1.1rem;
+  text-shadow: none;
+}
+/* the blizzard reads white-on-white: dark ink on a frosted pane instead */
+.held-light { color: #16232B; }
+.held-light .held-media::after { background: rgba(22,35,43,.1); }
+.held-light .held-cred { color: rgba(22,35,43,0.66); text-shadow: none; }
+.held-light .beat p {
+  text-shadow: none;
+  background: rgba(246,249,250,0.55);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  backdrop-filter: blur(16px) saturate(1.1);
+  padding: 1.5rem 1.9rem 1.6rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(22,35,43,.14);
+}
+/* the passing has no photograph — the beats float on the starfield alone */
+.held-dark { background: linear-gradient(to bottom, color-mix(in srgb, #251C11 60%, transparent) 0, transparent 22rem); }
+.held-dark .held-media { background: transparent; }
+.held-dark .held-media::after { content: none; }
+/* beats drift up as they cross the viewport, where the browser can */
+@supports (animation-timeline: view()) {
+  .beat p {
+    animation: beat-in linear both;
+    animation-timeline: view();
+    animation-range: entry 12% entry 55%;
+  }
+  @keyframes beat-in {
+    from { opacity: 0; transform: translateY(2.2rem); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 }
 
 /* ---- spoken moments: the voices of the record ---- */
@@ -446,9 +664,13 @@ html.js body[data-page="life"] .reveal.is-in {
   transition-duration: 800ms;
 }
 
-/* ---- scroll-driven enhancement (where supported): images settle as they arrive ---- */
+/* ---- scroll-driven depth (where supported) ----
+   Small figures settle softly as they arrive; the wide and full-bleed
+   images drift inside their frames at a different rate than the page —
+   parallax without a single scroll listener. The hero portrait is excluded
+   (it has its own one-time breath). */
 @supports (animation-timeline: view()) {
-  body[data-page="life"] .fig-frame img {
+  body[data-page="life"] .ch:not(.ch-hero) :is(.fig-inset, .fig-half, .fig-pair, .hero-figure) .fig-frame img {
     animation: tl-settle linear both;
     animation-timeline: view();
     animation-range: entry 0% cover 42%;
@@ -457,13 +679,23 @@ html.js body[data-page="life"] .reveal.is-in {
     from { transform: scale(1.055) translateY(10px); }
     to   { transform: scale(1) translateY(0); }
   }
+  body[data-page="life"] .ch :is(.fig-wide, .fig-bleed) .fig-frame img {
+    scale: 1.14;
+    animation: tl-parallax linear both;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
+  @keyframes tl-parallax {
+    from { transform: translateY(-5%); }
+    to   { transform: translateY(5%); }
+  }
   body[data-page="life"] .ch-year {
     animation: tl-drift linear both;
     animation-timeline: view();
     animation-range: entry 0% cover 60%;
   }
   @keyframes tl-drift {
-    from { transform: translateY(0.35em); opacity: 0; }
+    from { transform: translateY(0.5em); opacity: 0; }
     to   { transform: translateY(0); opacity: 0.1; }
   }
 }
@@ -485,9 +717,15 @@ html.js body[data-page="life"] .reveal.is-in {
   body[data-page="life"] .topnav .wordmark,
   body[data-page="life"] .topnav .fresh,
   body[data-page="life"] .topnav .links a { transition: none; }
+  html.js .ch-hero .rise,
+  html.js .ch-hero .fig-frame img { animation: none; }
+  .sc-night .stars { animation: none; opacity: 0.8; }
+  #scene .sc, .sc-vignette, .sc-grain { transition: opacity 0.01s, visibility 0.01s; }
   @supports (animation-timeline: view()) {
     body[data-page="life"] .fig-frame img,
-    body[data-page="life"] .ch-year { animation: none; }
+    body[data-page="life"] .ch-year,
+    .beat p { animation: none; }
+    body[data-page="life"] .ch :is(.fig-wide, .fig-bleed) .fig-frame img { scale: 1; }
   }
   .coda-card { transition: none; }
 }

@@ -6,7 +6,7 @@
 <title>The Story of Jackie — a Life Above Big Bear Lake, 2012–2026 · For Jackie</title>
 <meta name="description" content="The whole life of Jackie, the Big Bear bald eagle — the first chick ever hatched in the valley, the camera that made her famous, the blizzard, her ten eaglets, and the twenty-three days the world held its breath. Every date linked to the people who recorded it.">
 <link rel="stylesheet" href="/styles.css?v=15">
-<link rel="stylesheet" href="/timeline.css?v=17">
+<link rel="stylesheet" href="/timeline.css?v=18">
 <link rel="canonical" href="https://forjackie.org/timeline">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
@@ -64,6 +64,20 @@ document.documentElement.classList.add("js");
 </head>
 <body data-page="life" data-phase="night">
 
+<!-- The scene: a fixed backdrop of her world behind the whole page.
+     Blurred and dimmed imagery cross-fades with the phases; at night,
+     a field of stars. Sits at z-index -1; the chapters above are
+     translucent so the page reads as light moving over a place. -->
+<div id="scene" aria-hidden="true">
+  <div class="sc sc-img sc-dawn"></div>
+  <div class="sc sc-img sc-day"></div>
+  <div class="sc sc-img sc-snow"></div>
+  <div class="sc sc-img sc-dusk"></div>
+  <div class="sc sc-night"><i class="stars s1"></i><i class="stars s2"></i></div>
+  <div class="sc-vignette"></div>
+  <div class="sc-grain"></div>
+</div>
+
 <div class="strip"><span class="strip-full">Community-run · <strong>Not affiliated</strong> with FOBBV or the Ojai Raptor Center · Every fact links to its source</span><span class="strip-mini">Community-run · <strong>Not affiliated</strong> · Sources linked</span></div>
 <div class="alert-banner" id="alert-banner" role="status"></div>
 <script>(function () { var el = document.getElementById("alert-banner"); if (window.__fjBanner && el) { el.textContent = window.__fjBanner; el.classList.add("visible"); } })();</script>
@@ -91,18 +105,18 @@ document.documentElement.classList.add("js");
   <!-- ═══════════════ PROLOGUE · night ═══════════════ -->
   <header class="ch ph-night ch-hero" data-phase="night">
     <div class="ch-inner">
-      <p class="hero-place reveal">Big Bear Valley · California · 6,752 feet</p>
-      <h1 class="hero-name reveal">Jackie</h1>
-      <p class="hero-dates reveal">2012 — 2026</p>
-      <figure class="hero-figure reveal">
+      <p class="hero-place rise" style="--d:100ms">Big Bear Valley · California · 6,752 feet</p>
+      <h1 class="hero-name rise" style="--d:300ms">Jackie</h1>
+      <p class="hero-dates rise" style="--d:600ms">2012 — 2026</p>
+      <figure class="hero-figure rise" style="--d:850ms">
         <div class="fig-frame"><img src="/media/tl/00-jackie-portrait.jpg" width="866" height="583" alt="Jackie in close portrait: the stern brow and dark eye that watchers knew her by, in warm late light." fetchpriority="high"></div>
         <figcaption><span class="cap">The portrait FOBBV chose for its own remembrance of her.</span><span class="cred">Friends of Big Bear Valley</span></figcaption>
       </figure>
-      <blockquote class="hero-epigraph reveal"><p style="font-style:italic;margin:0;">“In remembrance of our beloved Jackie — soar high and free with Sandy.”</p>
+      <blockquote class="hero-epigraph rise" style="--d:1200ms"><p style="font-style:italic;margin:0;">“In remembrance of our beloved Jackie — soar high and free with Sandy.”</p>
         <cite class="cred" style="display:block;margin-top:0.6rem;">Friends of Big Bear Valley · August 2026</cite>
       </blockquote>
-      <p class="hero-note reveal">This is her whole life, told as one story. Every date on this page links to the people who recorded it.</p>
-      <div class="scroll-cue"></div>
+      <p class="hero-note rise" style="--d:1450ms">This is her whole life, told as one story. Every date on this page links to the people who recorded it.</p>
+      <div class="scroll-cue rise" style="--d:1900ms"></div>
     </div>
   </header>
 
@@ -265,21 +279,25 @@ document.documentElement.classList.add("js");
     </div>
   </section>
 
-  <!-- ═══════════════ 2023 · snow ═══════════════ -->
-  <section class="ch ph-snow from-day" data-phase="snow" id="y2023">
+  <!-- ═══════════════ 2023 · snow — a held scene, then the chapter ═══════════════ -->
+  <section class="held held-light" data-phase="snow" aria-label="February 2023 — the blizzard">
+    <div class="held-media">
+      <img src="/media/tl/05-2023-buried.jpg" width="1600" height="900" alt="Jackie almost entirely buried in snow on the nest, only her head and tail visible above the white." loading="lazy">
+      <span class="held-cred">FOBBV cam · via ABC7</span>
+    </div>
+    <div class="held-beats">
+      <div class="beat"><p>In late February 2023, atmospheric rivers stalled over the mountains and dropped forty-five inches of snow in three days.</p></div>
+      <div class="beat"><p>Jackie had two eggs under her. She did not get up.</p></div>
+      <div class="beat"><p>Twenty-seven hours without relief at the storm’s worst. This is the photograph her life is remembered by.<span class="beat-sub">February 25, 2023 · 10:12 a.m.</span></p></div>
+    </div>
+  </section>
+  <section class="ch ph-snow" data-phase="snow" id="y2023">
     <div class="ch-inner">
       <div class="ch-year" aria-hidden="true">2023</div>
       <p class="ch-kicker reveal">The white season</p>
       <h2 class="reveal">The winter the world started watching</h2>
       <div class="prose reveal">
-        <p class="lead">In late February 2023, atmospheric rivers stalled over the San Bernardino Mountains and dropped roughly <strong>45 inches of snow in three days</strong>. Jackie had two eggs under her. She did not get up.</p>
-      </div>
-      <figure class="fig-bleed reveal">
-        <div class="fig-frame"><img src="/media/tl/05-2023-buried.jpg" width="1600" height="900" alt="Jackie almost entirely buried in snow on the nest, only her head and tail visible above the white." loading="lazy"></div>
-        <figcaption><span class="cap">February 25, 2023, 10:12 a.m. — the photograph her life is remembered by.</span><span class="cred">FOBBV cam · via ABC7</span></figcaption>
-      </figure>
-      <div class="prose reveal">
-        <p>The nest disappeared. Then most of the eagle disappeared — a smooth white mound with a dark head keeping its shape against the wind. She sat through <strong>27 hours</strong> without relief at the storm’s worst, and the images went everywhere. A wildlife camera above a mountain lake quietly became one of the most-watched nature streams on Earth.</p>
+        <p class="lead">The nest disappeared. Then most of the eagle disappeared — a smooth white mound with a dark head keeping its shape against the wind. The images went everywhere, and a wildlife camera above a mountain lake quietly became one of the most-watched nature streams on Earth.</p>
         <p>The eggs never hatched. On March 6, nearly two weeks past the expected date, FOBBV told the community what the community already feared; more than <strong>12,000 people were watching the stream together</strong> that afternoon. The next day, with the nest unattended, ravens breached both eggs. There was no development inside to see.</p>
       </div>
       <blockquote class="voice reveal">
@@ -471,12 +489,17 @@ document.documentElement.classList.add("js");
     </div>
   </section>
 
-  <!-- ═══════════════ AUG 9–10 · night ═══════════════ -->
-  <section class="ch ph-night from-dusk" data-phase="night" id="passing">
+  <!-- ═══════════════ AUG 9–10 · night — a held scene under the stars ═══════════════ -->
+  <section class="held held-dark" data-phase="night" aria-label="August 9 and 10, 2026 — her death">
+    <div class="held-media"></div>
+    <div class="held-beats">
+      <div class="beat"><p>She spent her last night in the oxygen unit at Ojai, receiving intensive care to the end.</p></div>
+      <div class="beat"><p>She died in the overnight hours of August 9 into Monday, August 10, 2026.</p></div>
+      <div class="beat"><p>She was fourteen years old.</p></div>
+    </div>
+  </section>
+  <section class="ch ph-night" data-phase="night" id="passing">
     <div class="ch-inner">
-      <div class="prose reveal">
-        <p class="lead">She died in the overnight hours of <strong>August 9 into Monday, August 10, 2026</strong>, in the oxygen unit at Ojai, receiving intensive care to the end. She was fourteen.</p>
-      </div>
       <blockquote class="voice voice-grand reveal">
         <p>Our team is heartbroken. It has been an extraordinary privilege to care for her.</p>
         <cite>Ojai Raptor Center · Aug 10, 2026 · <a rel="noopener" target="_blank" href="https://www.instagram.com/p/Db3w88dj0_G/">their announcement</a></cite>
@@ -526,6 +549,10 @@ document.documentElement.classList.add("js");
         <p>Somewhere beyond the valley, if fortune has been kind, Sandy and Luna are learning what young eagles learn. Nobody can say — they carry no bands, only names. That is how this story has always worked: it gives you everything on camera, and then the forest keeps the rest.</p>
         <p>What can be said is this. Because one eagle stayed home, a camera went up. Because a camera went up, millions of people watched a wild animal live an entire, unedited life — the snow and the ravens and the eggs that never hatched and the two that did. And because they watched, 63 acres of shoreline she hunted from will now never be developed, held in trust for whoever nests above Big Bear Lake for the next hundred years.</p>
       </div>
+      <figure class="fig-wide reveal">
+        <div class="fig-frame"><img src="/media/tl/10-eagle-in-flight.jpg" width="1280" height="720" alt="An eagle in flight leaving the nest tree at first light, four days after Jackie's death." loading="lazy"></div>
+        <figcaption><span class="cap">An eagle leaves the nest tree at first light, four days after her death · Aug 14, 2026, 6:10 a.m.</span><span class="cred">FOBBV cam</span></figcaption>
+      </figure>
       <blockquote class="voice voice-grand reveal">
         <p>Jackie’s story has changed the future. Millions of people followed her life through the nest cameras. They celebrated her victories, worried through her challenges, and ultimately came together to help protect the place she calls home.</p>
         <cite>Ojai Raptor Center · Aug 2026 · <a rel="noopener" target="_blank" href="https://www.bigbeargrizzly.net/news/big-bears-bald-eagle-jackie-s-story-has-changed-the-future/article_fc291038-c43f-4519-801c-cc3ac9c1d3da.html">via Big Bear Grizzly</a></cite>
@@ -621,7 +648,7 @@ document.documentElement.classList.add("js");
    reading-progress hairline. No library, no layout work, rAF-throttled. */
 (function () {
   "use strict";
-  var sections = Array.prototype.slice.call(document.querySelectorAll(".ch[data-phase]"));
+  var sections = Array.prototype.slice.call(document.querySelectorAll(".ch[data-phase], .held[data-phase]"));
   if ("IntersectionObserver" in window && sections.length) {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
